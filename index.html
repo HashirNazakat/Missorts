@@ -37,7 +37,7 @@
     .controls{
       display:flex; gap:10px; flex-wrap:wrap; align-items:center; justify-content:flex-end;
     }
-    .btn, select, input[type="file"]{
+    .btn, select{
       background: rgba(255,255,255,.06);
       color: var(--txt);
       border:1px solid var(--line);
@@ -148,7 +148,6 @@
     .dangerText{color:#ffb3c2}
     .goodText{color:#bfffe9}
     .wcText{color:#d7e6ff}
-    .warnText{color:#ffe5a6}
     .hr{
       height:1px; background: rgba(255,255,255,.08);
       margin:10px 0;
@@ -167,20 +166,20 @@
     <div class="topbar">
       <div class="title">
         <h1>Missorts HUB — History Dashboard</h1>
-        <div class="sub">Load from Google Sheet (RAW_DUMP published as CSV) or import a CSV → saved locally → switch Date/Week to view history</div>
+        <div class="sub">Load from Google Sheet (RAW_DUMP published as CSV) → saved locally → switch Date/Week to view history</div>
       </div>
       <div class="controls">
         <button class="btn primary" id="btnLoadSheet">Load from GSheet</button>
-        <input id="file" type="file" accept=".csv,text/csv" />
-        <button class="btn ghost" id="btnImport">Import & Save</button>
         <select id="dateSelect" title="Pick a saved date"></select>
         <select id="weekSelect" title="Pick an ISO week"></select>
         <button class="btn ghost" id="btnRefresh">Refresh View</button>
         <button class="btn danger" id="btnWipe">Wipe All Saved Data</button>
       </div>
     </div>
+
     <div class="hint">
       <span class="badge" id="dbState">DB: …</span>
+      <span class="badge" id="lastUpdated">Last updated: —</span>
       <span class="badge" id="datesState">Dates: 0</span>
       <span class="badge" id="rowsState">Rows (selected week): 0</span>
       <span class="badge" id="thresholdState">Thresholds: WC ≤ 0.005, Good ≤ 0.01</span>
@@ -273,6 +272,19 @@ function fmtPct(x){
   return (x*100).toFixed(3) + "%";
 }
 function clampStr(s){ return (s ?? "").toString().trim(); }
+
+function setLastUpdated(isoString){
+  const el = document.getElementById("lastUpdated");
+  if (!isoString){
+    el.textContent = "Last updated: —";
+    return;
+  }
+  const d = new Date(isoString);
+  const ok = isFinite(d.getTime());
+  el.textContent = ok
+    ? `Last updated: ${d.toLocaleString("en-GB", { hour12:false })}`
+    : "Last updated: —";
+}
 
 function openDB(){
   return new Promise((resolve, reject) => {
@@ -750,20 +762,8 @@ async function render(){
 }
 
 /** =========================
- *  Import CSV (local file)
+ *  Validation & normalisation (shared)
  *  ========================= */
-function parseCSVFile(file){
-  return new Promise((resolve, reject) => {
-    Papa.parse(file, {
-      header: true,
-      skipEmptyLines: true,
-      dynamicTyping: false,
-      complete: (res) => resolve(res.data || []),
-      error: (err) => reject(err)
-    });
-  });
-}
-
 function validateAndNormaliseRows(rows){
   const norm = rows.map(r => {
     const out = {};
@@ -801,53 +801,6 @@ function validateAndNormaliseRows(rows){
   return cleaned;
 }
 
-async function importAndSave(){
-  const file = document.getElementById("file").files[0];
-  if (!file){
-    setStatus("Pick a CSV first.");
-    return;
-  }
-
-  setStatus("Parsing CSV…");
-  const rawRows = await parseCSVFile(file);
-  if (!rawRows.length){
-    setStatus("CSV parsed, but it’s empty.");
-    return;
-  }
-
-  let rows;
-  try{
-    rows = validateAndNormaliseRows(rawRows);
-  } catch(e){
-    setStatus("Import failed: " + e.message);
-    return;
-  }
-
-  const byDate = new Map();
-  for (const r of rows){
-    const d = r.Date;
-    const cur = byDate.get(d) || [];
-    cur.push(r);
-    byDate.set(d, cur);
-  }
-
-  setStatus(`Saving ${byDate.size} date(s) to browser storage…`);
-  for (const [date, dayRows] of byDate.entries()){
-    await putSnapshot(date, dayRows);
-  }
-
-  setStatus(`Saved. Imported ${rows.length} rows across ${byDate.size} day(s).`);
-  await refreshSelectors();
-
-  const dates = await getAllDates();
-  if (dates.length){
-    const last = dates[dates.length - 1];
-    document.getElementById("dateSelect").value = last;
-    document.getElementById("weekSelect").value = weekKeyFromDateStr(last);
-  }
-  await render();
-}
-
 /** =========================
  *  Load from Google Sheet (Published CSV) + Save history
  *  ========================= */
@@ -875,7 +828,10 @@ async function loadFromGSheetAndSave(){
     await putSnapshot(date, dayRows);
   }
 
-  // Move selector to latest date available after save
+  const nowIso = new Date().toISOString();
+  localStorage.setItem("missorts_last_updated", nowIso);
+  setLastUpdated(nowIso);
+
   const dates = await getAllDates();
   if (dates.length){
     const last = dates[dates.length - 1];
@@ -904,21 +860,22 @@ async function loadFromGSheetAndSave(){
   document.getElementById("thresholdState").textContent =
     `Thresholds: WC ≤ ${THRESH.wcMax}, Good ≤ ${THRESH.goodMax}`;
 
+  // load last updated from localStorage (persists across refreshes)
+  setLastUpdated(localStorage.getItem("missorts_last_updated"));
+
   await refreshSelectors();
   await render();
 
-  // Buttons
   document.getElementById("btnLoadSheet").addEventListener("click", async () => {
     try{
       await loadFromGSheetAndSave();
       await render();
       setStatus("Ready.");
     } catch(e){
-      setStatus("Load failed: " + e.message);
+      console.error(e);
+      setStatus("Load failed: " + (e?.message || e));
     }
   });
-
-  document.getElementById("btnImport").addEventListener("click", importAndSave);
 
   document.getElementById("btnRefresh").addEventListener("click", async () => {
     setStatus("Refreshing…");
@@ -946,17 +903,20 @@ async function loadFromGSheetAndSave(){
     const ok = confirm("Wipe ALL saved history from this browser? This cannot be undone.");
     if (!ok) return;
     await wipeAll();
+    localStorage.removeItem("missorts_last_updated");
+    setLastUpdated(null);
     setStatus("All saved data wiped.");
     await render();
     setStatus("Ready.");
   });
 
-  // OPTIONAL AUTO-LOAD ON OPEN (uncomment if you want it)
+  // If you want AUTO-LOAD on page open, uncomment:
   // try{
   //   await loadFromGSheetAndSave();
   //   await render();
   // } catch(e){
-  //   setStatus("Auto-load failed (click Load from GSheet): " + e.message);
+  //   console.error(e);
+  //   setStatus("Auto-load failed (click Load from GSheet): " + (e?.message || e));
   // }
 })();
 </script>
