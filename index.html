@@ -7,8 +7,8 @@
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
   <style>
     :root{
-      --bg:#0b1020; --panel:#0f1730; --panel2:#0c1328; --txt:#e8ecff; --muted:#a8b1d6;
-      --line:rgba(255,255,255,.08); --good:#38d39f; --poor:#ff5c7a; --wc:#7aa7ff; --warn:#ffd166;
+      --bg:#0b1020; --txt:#e8ecff; --muted:#a8b1d6;
+      --line:rgba(255,255,255,.08); --good:#38d39f; --poor:#ff5c7a; --wc:#7aa7ff;
       --shadow: 0 12px 30px rgba(0,0,0,.35);
       --radius: 18px;
       --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
@@ -26,17 +26,11 @@
       border-bottom: 1px solid var(--line);
     }
     .wrap{max-width:1280px; margin:0 auto; padding:18px 18px 22px;}
-    .topbar{
-      display:flex; gap:14px; align-items:center; justify-content:space-between; flex-wrap:wrap;
-    }
-    .title{
-      display:flex; flex-direction:column; gap:2px;
-    }
+    .topbar{display:flex; gap:14px; align-items:center; justify-content:space-between; flex-wrap:wrap;}
+    .title{display:flex; flex-direction:column; gap:2px;}
     .title h1{margin:0; font-size:18px; letter-spacing:.2px}
     .title .sub{color:var(--muted); font-size:12px}
-    .controls{
-      display:flex; gap:10px; flex-wrap:wrap; align-items:center; justify-content:flex-end;
-    }
+    .controls{display:flex; gap:10px; flex-wrap:wrap; align-items:center; justify-content:flex-end;}
     .btn, select{
       background: rgba(255,255,255,.06);
       color: var(--txt);
@@ -47,19 +41,12 @@
       outline:none;
     }
     select{padding-right:30px}
-    .btn{
-      cursor:pointer; transition: transform .05s ease, background .15s ease;
-      user-select:none;
-    }
+    .btn{cursor:pointer; transition: transform .05s ease, background .15s ease; user-select:none;}
     .btn:active{transform: translateY(1px)}
     .btn.primary{background: rgba(122,167,255,.18); border-color: rgba(122,167,255,.35)}
     .btn.danger{background: rgba(255,92,122,.14); border-color: rgba(255,92,122,.35)}
     .btn.ghost{background: rgba(255,255,255,.04)}
-    .hint{
-      margin-top:10px;
-      display:flex; gap:10px; flex-wrap:wrap; align-items:center;
-      color:var(--muted); font-size:12px;
-    }
+    .hint{margin-top:10px; display:flex; gap:10px; flex-wrap:wrap; align-items:center; color:var(--muted); font-size:12px;}
     .badge{
       font-family: var(--mono);
       border:1px solid var(--line);
@@ -68,11 +55,7 @@
       border-radius: 999px;
     }
     main .wrap{padding-top:18px}
-    .grid{
-      display:grid;
-      grid-template-columns: repeat(12, 1fr);
-      gap:14px;
-    }
+    .grid{display:grid; grid-template-columns: repeat(12, 1fr); gap:14px;}
     .card{
       border:1px solid var(--line);
       background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
@@ -81,12 +64,7 @@
       padding:14px;
       overflow:hidden;
     }
-    .card h2{
-      margin:0 0 10px 0;
-      font-size:13px;
-      letter-spacing:.2px;
-      color: #dbe3ff;
-    }
+    .card h2{margin:0 0 10px 0; font-size:13px; letter-spacing:.2px; color: #dbe3ff;}
     .kpi{
       display:flex; align-items:baseline; justify-content:space-between; gap:10px;
       padding:12px; border-radius: 14px;
@@ -106,58 +84,35 @@
       color:var(--muted);
     }
     .pill b{color:var(--txt); font-family:var(--mono)}
-    table{
-      width:100%;
-      border-collapse: collapse;
-      font-size:12px;
-    }
-    th, td{
-      padding:10px 10px;
-      border-bottom:1px solid rgba(255,255,255,.06);
-      vertical-align: middle;
-    }
-    th{
-      text-align:left;
-      color:var(--muted);
-      font-weight:600;
-      letter-spacing:.2px;
-      font-size:11px;
-      text-transform: uppercase;
-    }
+    table{width:100%; border-collapse: collapse; font-size:12px;}
+    th, td{padding:10px 10px; border-bottom:1px solid rgba(255,255,255,.06); vertical-align: middle;}
+    th{text-align:left; color:var(--muted); font-weight:600; letter-spacing:.2px; font-size:11px; text-transform: uppercase;}
     td.num{font-family:var(--mono); text-align:right}
     .right{ text-align:right }
     .muted{color:var(--muted)}
-    .band{
-      font-size:11px; padding:4px 8px; border-radius:999px; display:inline-block;
-      border:1px solid var(--line);
-      background: rgba(255,255,255,.05);
-      font-family: var(--mono);
-    }
+    .band{font-size:11px; padding:4px 8px; border-radius:999px; display:inline-block; border:1px solid var(--line); background: rgba(255,255,255,.05); font-family: var(--mono);}
     .band.poor{border-color: rgba(255,92,122,.35); background: rgba(255,92,122,.12); color:#ffd0d9}
     .band.good{border-color: rgba(56,211,159,.35); background: rgba(56,211,159,.10); color:#c8ffe9}
     .band.wc{border-color: rgba(122,167,255,.35); background: rgba(122,167,255,.12); color:#d7e6ff}
-    .split{
-      display:grid; grid-template-columns: 1fr 1fr; gap:14px;
-    }
+    .split{display:grid; grid-template-columns: 1fr 1fr; gap:14px;}
     .footnote{margin-top:10px; font-size:11px; color:var(--muted); line-height:1.4}
-    .status{
-      font-family: var(--mono);
-      font-size:11px;
-      color: var(--muted);
-    }
+    .status{font-family: var(--mono); font-size:11px; color: var(--muted);}
     .dangerText{color:#ffb3c2}
     .goodText{color:#bfffe9}
     .wcText{color:#d7e6ff}
-    .hr{
-      height:1px; background: rgba(255,255,255,.08);
-      margin:10px 0;
+    .hr{height:1px; background: rgba(255,255,255,.08); margin:10px 0;}
+    input.inline{
+      width:100%;
+      background:rgba(255,255,255,.05);
+      border:1px solid rgba(255,255,255,.08);
+      color:var(--txt);
+      padding:8px 10px;
+      border-radius:10px;
+      font-size:12px;
+      outline:none;
     }
-    @media (max-width: 1100px){
-      .split{grid-template-columns: 1fr}
-    }
-    @media (max-width: 900px){
-      .grid{grid-template-columns: repeat(6, 1fr)}
-    }
+    @media (max-width: 1100px){ .split{grid-template-columns: 1fr} }
+    @media (max-width: 900px){ .grid{grid-template-columns: repeat(6, 1fr)} }
   </style>
 </head>
 <body>
@@ -191,6 +146,13 @@
 <main>
   <div class="wrap">
     <div class="grid">
+
+      <!-- ACTION LIST -->
+      <div class="card" style="grid-column: span 12;">
+        <h2>Top 5 Actions for Today</h2>
+        <div id="actionsList"></div>
+        <div class="footnote">Owners & due dates are editable and saved locally in this browser. Actions are generated dynamically from today vs baseline + repeat offenders + severity.</div>
+      </div>
 
       <div class="card" style="grid-column: span 12;">
         <h2>Week KPIs</h2>
@@ -262,26 +224,19 @@ const PUBLISHED_CSV_URL =
  *  ========================= */
 const DB_NAME = "missortsHub";
 const DB_VER = 1;
-const STORE = "snapshots";  // keyPath: date (YYYY-MM-DD)
+const STORE = "snapshots"; // keyPath: date (YYYY-MM-DD)
 let db = null;
 
 function setStatus(msg){ document.getElementById("status").textContent = msg; }
 function fmtInt(n){ return (Number(n)||0).toLocaleString("en-GB"); }
-function fmtPct(x){
-  if (!isFinite(x)) return "—";
-  return (x*100).toFixed(3) + "%";
-}
+function fmtPct(x){ return isFinite(x) ? (x*100).toFixed(3) + "%" : "—"; }
 function clampStr(s){ return (s ?? "").toString().trim(); }
 
 function setLastUpdated(isoString){
   const el = document.getElementById("lastUpdated");
-  if (!isoString){
-    el.textContent = "Last updated: —";
-    return;
-  }
+  if (!isoString){ el.textContent = "Last updated: —"; return; }
   const d = new Date(isoString);
-  const ok = isFinite(d.getTime());
-  el.textContent = ok
+  el.textContent = isFinite(d.getTime())
     ? `Last updated: ${d.toLocaleString("en-GB", { hour12:false })}`
     : "Last updated: —";
 }
@@ -326,13 +281,8 @@ function getAllDates(){
     const req = store.openCursor();
     req.onsuccess = (e) => {
       const cursor = e.target.result;
-      if (cursor){
-        dates.push(cursor.key);
-        cursor.continue();
-      } else {
-        dates.sort();
-        resolve(dates);
-      }
+      if (cursor){ dates.push(cursor.key); cursor.continue(); }
+      else { dates.sort(); resolve(dates); }
     };
     req.onerror = () => reject(req.error);
   });
@@ -380,9 +330,7 @@ const REQUIRED = [
   "Total Parcels"
 ];
 
-function normaliseHeader(h){
-  return clampStr(h).replace(/\s+/g," ").trim();
-}
+function normaliseHeader(h){ return clampStr(h).replace(/\s+/g," ").trim(); }
 
 function parseNumber(v){
   if (v === null || v === undefined) return 0;
@@ -394,7 +342,6 @@ function parseNumber(v){
 function coerceDateStr(v){
   const s = clampStr(v);
   if (!s) return null;
-
   if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0,10);
 
   const m = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
@@ -403,14 +350,12 @@ function coerceDateStr(v){
     let dd, mm;
     if (a > 12){ dd=a; mm=b; }
     else if (b > 12){ dd=b; mm=a; }
-    else { dd=a; mm=b; }
+    else { dd=a; mm=b; } // UK default
     const d = new Date(Date.UTC(y, mm-1, dd));
     return toISODateStr(new Date(d));
   }
-
   const d = new Date(s);
   if (isFinite(d.getTime())) return toISODateStr(d);
-
   return null;
 }
 
@@ -418,7 +363,6 @@ function coerceDateStr(v){
  *  Thresholds
  *  ========================= */
 let THRESH = { wcMax: 0.005, goodMax: 0.01 };
-
 function bandFor(p){
   if (!isFinite(p)) return "Poor";
   if (p <= THRESH.wcMax) return "World Class";
@@ -434,7 +378,7 @@ function bandClass(b){
 /** =========================
  *  Aggregations
  *  ========================= */
-function aggregateWeekly(rows){
+function aggregateByOperative(rows){
   const map = new Map();
   for (const r of rows){
     const op = clampStr(r.operative);
@@ -457,22 +401,15 @@ function aggregateWeekly(rows){
     const totalErrors = v.e1+v.e2+v.e3+v.e4+v.e5;
     const missort = v.parcels > 0 ? totalErrors / v.parcels : NaN;
     const band = bandFor(missort);
-    arr.push({
-      operative: v.operative,
-      e1: v.e1, e2: v.e2, e3: v.e3, e4: v.e4, e5: v.e5,
-      parcels: v.parcels,
-      totalErrors,
-      missort,
-      band
-    });
+    arr.push({ ...v, totalErrors, missort, band });
   }
   return arr;
 }
 
-function totalsFromWeekly(weeklyAgg){
+function totalsFromAgg(agg){
   let parcels=0, errors=0;
   let e1=0,e2=0,e3=0,e4=0,e5=0;
-  for (const r of weeklyAgg){
+  for (const r of agg){
     parcels += r.parcels;
     errors += r.totalErrors;
     e1 += r.e1; e2 += r.e2; e3 += r.e3; e4 += r.e4; e5 += r.e5;
@@ -481,15 +418,16 @@ function totalsFromWeekly(weeklyAgg){
   return { parcels, errors, missort, e1,e2,e3,e4,e5 };
 }
 
-function topN(weeklyAgg, keyFn, n=10, desc=true){
-  const a = weeklyAgg.slice().filter(x => isFinite(keyFn(x)));
+function topN(agg, keyFn, n=10, desc=true){
+  const a = agg.slice().filter(x => isFinite(keyFn(x)));
   a.sort((x,y) => desc ? (keyFn(y)-keyFn(x)) : (keyFn(x)-keyFn(y)));
   return a.slice(0,n);
 }
 
-function repeatOffenders(dayRowsInWeek){
-  const dailyByOpDate = new Map();
-  for (const r of dayRowsInWeek){
+function repeatOffenders(dayRows){
+  // Counts poor-band days per op, based on daily aggregation
+  const dailyByOpDate = new Map(); // op||date -> {errors, parcels}
+  for (const r of dayRows){
     const op = clampStr(r.operative); const date = clampStr(r.Date);
     if (!op || !date) continue;
     const k = op + "||" + date;
@@ -505,7 +443,7 @@ function repeatOffenders(dayRowsInWeek){
     const miss = rec.parcels > 0 ? rec.errors / rec.parcels : NaN;
     const b = bandFor(miss);
     const cur = perOp.get(rec.op) || [];
-    cur.push({ date: rec.date, missort: miss, band: b });
+    cur.push({ date: rec.date, missort: miss, band: b, parcels: rec.parcels });
     perOp.set(rec.op, cur);
   }
 
@@ -520,24 +458,21 @@ function repeatOffenders(dayRowsInWeek){
       arr.push({ operative: op, poorDays, daysPresent, avgMissort: avgMiss, worstDay: worst });
     }
   }
-
   arr.sort((a,b) => (b.poorDays - a.poorDays) || (b.worstDay - a.worstDay));
   return arr;
 }
 
 /** =========================
- *  Rendering
+ *  Rendering core dashboard
  *  ========================= */
 function renderKPIs(t){
   const row = document.getElementById("kpiRow");
   row.innerHTML = "";
-
   const cards = [
     { label:"Total Parcels (week)", value: fmtInt(t.parcels), small:"Σ parcels" },
     { label:"Total Errors (week)", value: fmtInt(t.errors), small:"Σ (E1..E5)" },
     { label:"Missort % (week)", value: fmtPct(t.missort), small:"errors / parcels" }
   ];
-
   for (const c of cards){
     const el = document.createElement("div");
     el.className = "kpi";
@@ -582,15 +517,8 @@ function renderPerfTable(rows){
       <thead>
         <tr>
           <th>Operative</th>
-          <th class="right">E1</th>
-          <th class="right">E2</th>
-          <th class="right">E3</th>
-          <th class="right">E4</th>
-          <th class="right">E5</th>
-          <th class="right">Parcels</th>
-          <th class="right">Total Errors</th>
-          <th class="right">Missort %</th>
-          <th>Band</th>
+          <th class="right">E1</th><th class="right">E2</th><th class="right">E3</th><th class="right">E4</th><th class="right">E5</th>
+          <th class="right">Parcels</th><th class="right">Total Errors</th><th class="right">Missort %</th><th>Band</th>
         </tr>
       </thead>
       <tbody>
@@ -613,9 +541,9 @@ function renderPerfTable(rows){
   `;
 }
 
-function renderErrorTopTables(weeklyAgg){
+function renderErrorTopTables(agg){
   const mk = (errKey) => {
-    const top = topN(weeklyAgg, r => r[errKey], 10, true);
+    const top = topN(agg, r => r[errKey], 10, true);
     return `
       <table>
         <thead>
@@ -634,7 +562,6 @@ function renderErrorTopTables(weeklyAgg){
       </table>
     `;
   };
-
   document.getElementById("e1Table").innerHTML = mk("e1");
   document.getElementById("e2Table").innerHTML = mk("e2");
   document.getElementById("e3Table").innerHTML = mk("e3");
@@ -689,9 +616,7 @@ async function refreshSelectors(){
   const dateSel = document.getElementById("dateSelect");
   const cur = dateSel.value;
   dateSel.innerHTML = dates.map(d => `<option value="${d}">${d}</option>`).join("");
-  if (dates.length){
-    dateSel.value = cur && dates.includes(cur) ? cur : dates[dates.length - 1];
-  }
+  if (dates.length) dateSel.value = (cur && dates.includes(cur)) ? cur : dates[dates.length - 1];
 
   const weekSel = document.getElementById("weekSelect");
   const weeks = Array.from(new Set(dates.map(weekKeyFromDateStr))).sort();
@@ -700,7 +625,7 @@ async function refreshSelectors(){
 
   if (dateSel.value){
     const wk = weekKeyFromDateStr(dateSel.value);
-    weekSel.value = weeks.includes(wk) ? wk : (curW && weeks.includes(curW) ? curW : (weeks[weeks.length - 1] || ""));
+    weekSel.value = weeks.includes(wk) ? wk : ((curW && weeks.includes(curW)) ? curW : (weeks[weeks.length - 1] || ""));
   }
 }
 
@@ -715,50 +640,343 @@ async function getRowsForWeek(weekKey){
   return all;
 }
 
-async function render(){
-  await refreshSelectors();
-  const weekKey = document.getElementById("weekSelect").value;
-  const rows = weekKey ? await getRowsForWeek(weekKey) : [];
-  document.getElementById("rowsState").textContent = `Rows (selected week): ${rows.length}`;
+async function getRowsForDate(dateStr){
+  const snap = await getSnapshot(dateStr);
+  return (snap && Array.isArray(snap.rows)) ? snap.rows : [];
+}
 
-  const weeklyAgg = aggregateWeekly(rows);
-  const totals = totalsFromWeekly(weeklyAgg);
+function getLatestDate(dates){ return dates.length ? dates[dates.length - 1] : null; }
 
-  renderKPIs(totals);
-  renderErrorBreakdown(totals);
+function addDaysISO(days){
+  const d = new Date();
+  d.setDate(d.getDate() + days);
+  return d.toISOString().slice(0,10);
+}
 
-  const counts = { poor:0, good:0, wc:0 };
-  for (const r of weeklyAgg){
-    if (r.band === "World Class") counts.wc++;
-    else if (r.band === "Good") counts.good++;
-    else counts.poor++;
+function ratePerK(parcels, errors){
+  return parcels > 0 ? (errors / parcels) * 1000 : 0;
+}
+
+async function rollingBaseline(todayStr, daysBack=7){
+  const dates = await getAllDates();
+  const idx = dates.indexOf(todayStr);
+  if (idx <= 0) return null;
+
+  const windowDates = dates.slice(Math.max(0, idx - daysBack), idx);
+  const rows = [];
+  for (const d of windowDates) rows.push(...await getRowsForDate(d));
+
+  let parcels=0, e1=0,e2=0,e3=0,e4=0,e5=0;
+  for (const r of rows){
+    parcels += parseNumber(r["Total Parcels"]);
+    e1 += parseNumber(r["Error 1 - Estimate"]);
+    e2 += parseNumber(r["Error 2"]);
+    e3 += parseNumber(r["Error 3"]);
+    e4 += parseNumber(r["Error 4"]);
+    e5 += parseNumber(r["Error 5"]);
   }
-  const kpiRow = document.getElementById("kpiRow");
-  const cEl = document.createElement("div");
-  cEl.className = "kpi";
-  cEl.style.minWidth = "360px";
-  cEl.innerHTML = `
-    <div>
-      <div class="label">Performer Bands (week)</div>
-      <div class="row" style="margin-top:6px">
-        <span class="pill"><span class="wcText">World Class</span>: <b>${counts.wc}</b></span>
-        <span class="pill"><span class="goodText">Good</span>: <b>${counts.good}</b></span>
-        <span class="pill"><span class="dangerText">Poor</span>: <b>${counts.poor}</b></span>
-      </div>
-    </div>
-    <div class="small">counts of operatives</div>
+  return { parcels, e1,e2,e3,e4,e5, nDays: windowDates.length };
+}
+
+/** =========================
+ *  "AI-like" Action Engine
+ *  Concrete actions, dynamic, no routes
+ *  ========================= */
+const ACTION_CFG = {
+  minParcelsForCoaching: 250,
+  spikeMultiplier: 1.5,         // today rate > 1.5x baseline => spike
+  spikeAbsPerK: 0.75,           // also require absolute spike, to avoid noise
+  repeatPoorDays: 3,            // retrain trigger
+  severePoorDays: 5,            // escalation trigger
+  maxActions: 8                 // we will rank and show top 5, but generate more
+};
+
+// Default owners (editable + saved)
+const OWNER_DEFAULTS = {
+  retrain: "Supervisor",
+  coaching: "Supervisor",
+  escalation: "Shift Manager",
+  process_check: "Shift Manager",
+  qa_audit: "Quality / Compliance",
+  daily_huddle: "Shift Manager",
+  data_quality: "Admin / Analyst"
+};
+
+function actionKey(a){ return `${a.type}||${a.subject}`; }
+
+function loadActionOverrides(){
+  try { return JSON.parse(localStorage.getItem("missorts_action_overrides") || "{}"); }
+  catch { return {}; }
+}
+function saveActionOverrides(obj){
+  localStorage.setItem("missorts_action_overrides", JSON.stringify(obj));
+}
+
+function renderActions(actions){
+  const overrides = loadActionOverrides();
+
+  const rows = actions.map(a => {
+    const k = actionKey(a);
+    const ov = overrides[k] || {};
+    const owner = ov.owner ?? a.owner ?? "";
+    const due = ov.due ?? a.due ?? "";
+
+    return `
+      <tr>
+        <td>${escapeHTML(a.action)}</td>
+        <td class="num">${escapeHTML(String(a.priority))}</td>
+        <td>
+          <input class="inline" data-k="${escapeHTML(k)}" data-f="owner"
+                 value="${escapeHTML(owner)}" placeholder="Owner">
+        </td>
+        <td>
+          <input class="inline" data-k="${escapeHTML(k)}" data-f="due" type="date"
+                 value="${escapeHTML(due)}">
+        </td>
+        <td class="muted">${escapeHTML(a.reason || "")}</td>
+      </tr>
+    `;
+  }).join("");
+
+  document.getElementById("actionsList").innerHTML = `
+    <table>
+      <thead>
+        <tr>
+          <th>Action</th>
+          <th class="right">Priority</th>
+          <th>Owner</th>
+          <th>Due</th>
+          <th>Why</th>
+        </tr>
+      </thead>
+      <tbody>${rows || `<tr><td colspan="5" class="muted">No actions generated.</td></tr>`}</tbody>
+    </table>
   `;
-  kpiRow.appendChild(cEl);
 
-  const filtered = weeklyAgg.filter(r => r.parcels > 0);
-  const worst = topN(filtered, r => r.missort, 10, true);
-  const best  = topN(filtered, r => r.missort, 10, false);
-  renderWorstBest(worst, best);
+  document.querySelectorAll("#actionsList input").forEach(inp => {
+    inp.addEventListener("change", (e) => {
+      const k = e.target.getAttribute("data-k");
+      const f = e.target.getAttribute("data-f");
+      const v = e.target.value;
 
-  renderErrorTopTables(weeklyAgg);
+      const obj = loadActionOverrides();
+      obj[k] = obj[k] || {};
+      obj[k][f] = v;
+      saveActionOverrides(obj);
+    });
+  });
+}
 
-  const repeat = repeatOffenders(rows);
-  renderRepeatTable(repeat);
+function scoreAction(a){
+  // lower is higher priority; tie-break with "severity"
+  const base = a.priority * 100;
+  const sev = Number(a.severity || 0);
+  return base - sev;
+}
+
+async function generateActionsForToday(){
+  const dates = await getAllDates();
+  const today = getLatestDate(dates);
+  if (!today) return [];
+
+  const todayRows = await getRowsForDate(today);
+  const todayAgg = aggregateByOperative(todayRows);
+  const todayTotals = totalsFromAgg(todayAgg);
+
+  const base = await rollingBaseline(today, 7);
+
+  const actions = [];
+
+  // A) DATA QUALITY action (if basics look wrong)
+  // e.g. errors > parcels, zero parcels, missing operatives
+  const suspicious = todayAgg.find(r => r.totalErrors > r.parcels && r.parcels > 0);
+  if (todayTotals.parcels === 0 || todayRows.length === 0){
+    actions.push({
+      type:"data_quality",
+      subject:"No data",
+      priority:1,
+      severity:100,
+      action:`Fix data feed — today has no usable rows/parcels`,
+      owner: OWNER_DEFAULTS.data_quality,
+      due: addDaysISO(0),
+      reason:`No rows or total parcels = 0 for latest date (${today}). Check RAW_DUMP export/publish.`
+    });
+    return actions.slice(0,5);
+  }
+  if (suspicious){
+    actions.push({
+      type:"data_quality",
+      subject:"Outliers",
+      priority:2,
+      severity:60,
+      action:`Validate RAW_DUMP — found impossible values (errors > parcels)`,
+      owner: OWNER_DEFAULTS.data_quality,
+      due: addDaysISO(0),
+      reason:`Example: ${suspicious.operative} has ${suspicious.totalErrors} errors on ${suspicious.parcels} parcels.`
+    });
+  }
+
+  // Build 7-day window rows (today included) for repeat offenders
+  const idx = dates.indexOf(today);
+  const windowDates = dates.slice(Math.max(0, idx - 6), idx + 1); // last 7 calendar-available dates
+  const windowRows = [];
+  for (const d of windowDates) windowRows.push(...await getRowsForDate(d));
+  const repeat = repeatOffenders(windowRows);
+
+  // B) RETRAIN repeat offenders (>=3 poor days)
+  const repeatCandidates = repeat.filter(x => x.poorDays >= ACTION_CFG.repeatPoorDays).slice(0,3);
+  for (const r of repeatCandidates){
+    actions.push({
+      type:"retrain",
+      subject:r.operative,
+      priority:1,
+      severity: Math.min(100, r.poorDays * 15),
+      action:`Retrain / re-brief ${r.operative} — repeat poor performance`,
+      owner: OWNER_DEFAULTS.retrain,
+      due: addDaysISO(2),
+      reason:`${r.poorDays} poor days in last ${windowDates.length} days (avg ${fmtPct(r.avgMissort)}, worst ${fmtPct(r.worstDay)}).`
+    });
+  }
+
+  // C) ESCALATE severe repeat offenders (>=5 poor days)
+  const severe = repeat.filter(x => x.poorDays >= ACTION_CFG.severePoorDays).slice(0,2);
+  for (const r of severe){
+    actions.push({
+      type:"escalation",
+      subject:r.operative,
+      priority:1,
+      severity: 95,
+      action:`Escalate performance plan for ${r.operative} (PIP / removal from critical tasks)`,
+      owner: OWNER_DEFAULTS.escalation,
+      due: addDaysISO(1),
+      reason:`Severe: ${r.poorDays} poor days in last ${windowDates.length} days.`
+    });
+  }
+
+  // D) TODAY worst performers coaching (only if volume is meaningful)
+  const worstToday = topN(todayAgg.filter(x=>x.parcels>0), r => r.missort, 5, true);
+  for (const w of worstToday.slice(0,2)){
+    if (w.parcels < ACTION_CFG.minParcelsForCoaching){
+      actions.push({
+        type:"coaching",
+        subject:w.operative,
+        priority:3,
+        severity: 20,
+        action:`Validate before coaching — ${w.operative} has low volume today (${w.parcels} parcels)`,
+        owner: OWNER_DEFAULTS.coaching,
+        due: "",
+        reason:`High % on low parcels is noisy. Re-check with supervisor observation + next shift volume.`
+      });
+    } else {
+      actions.push({
+        type:"coaching",
+        subject:w.operative,
+        priority:2,
+        severity: Math.min(80, w.missort*10000),
+        action:`Targeted coaching for ${w.operative} on today’s misses`,
+        owner: OWNER_DEFAULTS.coaching,
+        due: addDaysISO(1),
+        reason:`Today missort ${fmtPct(w.missort)} on ${fmtInt(w.parcels)} parcels (errors ${fmtInt(w.totalErrors)}).`
+      });
+    }
+  }
+
+  // E) PROCESS CHECK actions based on error-category spikes vs baseline
+  // Uses rate per 1,000 parcels for comparability.
+  if (base && base.parcels > 0){
+    const todayRates = {
+      e1: ratePerK(todayTotals.parcels, todayTotals.e1),
+      e2: ratePerK(todayTotals.parcels, todayTotals.e2),
+      e3: ratePerK(todayTotals.parcels, todayTotals.e3),
+      e4: ratePerK(todayTotals.parcels, todayTotals.e4),
+      e5: ratePerK(todayTotals.parcels, todayTotals.e5),
+    };
+    const baseRates = {
+      e1: ratePerK(base.parcels, base.e1),
+      e2: ratePerK(base.parcels, base.e2),
+      e3: ratePerK(base.parcels, base.e3),
+      e4: ratePerK(base.parcels, base.e4),
+      e5: ratePerK(base.parcels, base.e5),
+    };
+
+    function maybeSpike(key, label){
+      const t = todayRates[key], b = baseRates[key];
+      if (b <= 0) return;
+      const mult = t / b;
+      const abs = t - b;
+      if (mult >= ACTION_CFG.spikeMultiplier && abs >= ACTION_CFG.spikeAbsPerK){
+        const uplift = (mult - 1) * 100;
+        // identify top contributors to this error today
+        const topContrib = topN(todayAgg, r => r[key], 3, true).filter(x=>x[key]>0).map(x=>x.operative);
+        actions.push({
+          type:"process_check",
+          subject:label,
+          priority:1,
+          severity: Math.min(90, uplift),
+          action:`Investigate ${label} spike today — check process controls + brief floor`,
+          owner: OWNER_DEFAULTS.process_check,
+          due: addDaysISO(1),
+          reason:`${label}/1k today ${t.toFixed(2)} vs baseline ${b.toFixed(2)} (+${uplift.toFixed(0)}%). Top contributors: ${topContrib.join(", ") || "n/a"}.`
+        });
+      }
+    }
+
+    maybeSpike("e1", "Error 1");
+    maybeSpike("e2", "Error 2");
+    maybeSpike("e3", "Error 3");
+    maybeSpike("e4", "Error 4");
+    maybeSpike("e5", "Error 5");
+
+    // Overall missort spike (management-level action)
+    const todayMissK = ratePerK(todayTotals.parcels, todayTotals.errors);
+    const baseMissK = ratePerK(base.parcels, (base.e1+base.e2+base.e3+base.e4+base.e5));
+    if (baseMissK > 0 && (todayMissK/baseMissK) >= 1.35 && (todayMissK-baseMissK) >= 0.75){
+      const uplift = ((todayMissK/baseMissK)-1)*100;
+      actions.push({
+        type:"daily_huddle",
+        subject:"Overall missorts",
+        priority:1,
+        severity: Math.min(95, uplift),
+        action:`Run 10-min quality huddle — missorts are up vs baseline`,
+        owner: OWNER_DEFAULTS.daily_huddle,
+        due: addDaysISO(0),
+        reason:`Missorts/1k today ${todayMissK.toFixed(2)} vs baseline ${baseMissK.toFixed(2)} (+${uplift.toFixed(0)}%). Focus on top error category spikes.`
+      });
+    }
+  }
+
+  // F) QA / audit action if a single operative is driving majority of one error type today
+  // Simple “dominance” check
+  const totalE4 = todayTotals.e4;
+  if (totalE4 > 0){
+    const topE4 = topN(todayAgg, r => r.e4, 1, true)[0];
+    if (topE4 && topE4.e4 / totalE4 >= 0.35 && topE4.e4 >= 5){
+      actions.push({
+        type:"qa_audit",
+        subject:`Error 4 dominance`,
+        priority:2,
+        severity: 70,
+        action:`QA spot-audit ${topE4.operative} handling — concentrated Error 4`,
+        owner: OWNER_DEFAULTS.qa_audit,
+        due: addDaysISO(1),
+        reason:`${topE4.operative} accounts for ${(topE4.e4/totalE4*100).toFixed(0)}% of today’s Error 4 (${topE4.e4}/${totalE4}).`
+      });
+    }
+  }
+
+  // De-dupe by type+subject
+  const seen = new Set();
+  const deduped = [];
+  for (const a of actions){
+    const k = actionKey(a);
+    if (seen.has(k)) continue;
+    seen.add(k);
+    deduped.push(a);
+  }
+
+  // Rank and return top 5
+  deduped.sort((a,b)=> scoreAction(a) - scoreAction(b));
+  return deduped.slice(0,5);
 }
 
 /** =========================
@@ -767,17 +985,13 @@ async function render(){
 function validateAndNormaliseRows(rows){
   const norm = rows.map(r => {
     const out = {};
-    for (const k in r){
-      out[normaliseHeader(k)] = r[k];
-    }
+    for (const k in r) out[normaliseHeader(k)] = r[k];
     return out;
   });
 
   const cols = new Set(Object.keys(norm[0] || {}));
   const missing = REQUIRED.filter(c => !cols.has(c));
-  if (missing.length){
-    throw new Error("Missing columns: " + missing.join(", "));
-  }
+  if (missing.length) throw new Error("Missing columns: " + missing.join(", "));
 
   const cleaned = [];
   for (const r of norm){
@@ -796,7 +1010,6 @@ function validateAndNormaliseRows(rows){
       "Total Parcels": parseNumber(r["Total Parcels"])
     });
   }
-
   if (!cleaned.length) throw new Error("No usable rows found after cleaning (check Date format and headers).");
   return cleaned;
 }
@@ -806,13 +1019,11 @@ function validateAndNormaliseRows(rows){
  *  ========================= */
 async function loadFromGSheetAndSave(){
   setStatus("Fetching RAW_DUMP from Google Sheet…");
-
   const res = await fetch(PUBLISHED_CSV_URL, { cache: "no-store" });
   if (!res.ok) throw new Error(`Fetch failed (${res.status})`);
 
   const csvText = await res.text();
   const parsed = Papa.parse(csvText, { header: true, skipEmptyLines: true }).data;
-
   const cleaned = validateAndNormaliseRows(parsed);
 
   const byDate = new Map();
@@ -843,6 +1054,60 @@ async function loadFromGSheetAndSave(){
 }
 
 /** =========================
+ *  Main render
+ *  ========================= */
+async function render(){
+  await refreshSelectors();
+  const weekKey = document.getElementById("weekSelect").value;
+  const rows = weekKey ? await getRowsForWeek(weekKey) : [];
+  document.getElementById("rowsState").textContent = `Rows (selected week): ${rows.length}`;
+
+  const agg = aggregateByOperative(rows);
+  const totals = totalsFromAgg(agg);
+
+  renderKPIs(totals);
+  renderErrorBreakdown(totals);
+
+  // band counts (week)
+  const counts = { poor:0, good:0, wc:0 };
+  for (const r of agg){
+    if (r.band === "World Class") counts.wc++;
+    else if (r.band === "Good") counts.good++;
+    else counts.poor++;
+  }
+  const kpiRow = document.getElementById("kpiRow");
+  const cEl = document.createElement("div");
+  cEl.className = "kpi";
+  cEl.style.minWidth = "360px";
+  cEl.innerHTML = `
+    <div>
+      <div class="label">Performer Bands (week)</div>
+      <div class="row" style="margin-top:6px">
+        <span class="pill"><span class="wcText">World Class</span>: <b>${counts.wc}</b></span>
+        <span class="pill"><span class="goodText">Good</span>: <b>${counts.good}</b></span>
+        <span class="pill"><span class="dangerText">Poor</span>: <b>${counts.poor}</b></span>
+      </div>
+    </div>
+    <div class="small">counts of operatives</div>
+  `;
+  kpiRow.appendChild(cEl);
+
+  const filtered = agg.filter(r => r.parcels > 0);
+  const worst = topN(filtered, r => r.missort, 10, true);
+  const best  = topN(filtered, r => r.missort, 10, false);
+  renderWorstBest(worst, best);
+
+  renderErrorTopTables(agg);
+
+  const repeat = repeatOffenders(rows);
+  renderRepeatTable(repeat);
+
+  // ACTIONS (today, dynamic)
+  const actions = await generateActionsForToday();
+  renderActions(actions);
+}
+
+/** =========================
  *  Init
  *  ========================= */
 (async function init(){
@@ -860,7 +1125,6 @@ async function loadFromGSheetAndSave(){
   document.getElementById("thresholdState").textContent =
     `Thresholds: WC ≤ ${THRESH.wcMax}, Good ≤ ${THRESH.goodMax}`;
 
-  // load last updated from localStorage (persists across refreshes)
   setLastUpdated(localStorage.getItem("missorts_last_updated"));
 
   await refreshSelectors();
@@ -885,9 +1149,7 @@ async function loadFromGSheetAndSave(){
 
   document.getElementById("dateSelect").addEventListener("change", async (e) => {
     const d = e.target.value;
-    if (d){
-      document.getElementById("weekSelect").value = weekKeyFromDateStr(d);
-    }
+    if (d) document.getElementById("weekSelect").value = weekKeyFromDateStr(d);
     setStatus("Date changed → refreshed view.");
     await render();
     setStatus("Ready.");
@@ -904,20 +1166,16 @@ async function loadFromGSheetAndSave(){
     if (!ok) return;
     await wipeAll();
     localStorage.removeItem("missorts_last_updated");
+    localStorage.removeItem("missorts_action_overrides");
     setLastUpdated(null);
     setStatus("All saved data wiped.");
     await render();
     setStatus("Ready.");
   });
 
-  // If you want AUTO-LOAD on page open, uncomment:
-  // try{
-  //   await loadFromGSheetAndSave();
-  //   await render();
-  // } catch(e){
-  //   console.error(e);
-  //   setStatus("Auto-load failed (click Load from GSheet): " + (e?.message || e));
-  // }
+  // AUTO-LOAD on open (optional). Uncomment if you want:
+  // try{ await loadFromGSheetAndSave(); await render(); }
+  // catch(e){ console.error(e); setStatus("Auto-load failed (click Load from GSheet): " + (e?.message || e)); }
 })();
 </script>
 </body>
