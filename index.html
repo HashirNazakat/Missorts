@@ -1,0 +1,964 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Missorts HUB — History Dashboard</title>
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <style>
+    :root{
+      --bg:#0b1020; --panel:#0f1730; --panel2:#0c1328; --txt:#e8ecff; --muted:#a8b1d6;
+      --line:rgba(255,255,255,.08); --good:#38d39f; --poor:#ff5c7a; --wc:#7aa7ff; --warn:#ffd166;
+      --shadow: 0 12px 30px rgba(0,0,0,.35);
+      --radius: 18px;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0; background: radial-gradient(1200px 800px at 20% 0%, #16245a 0%, var(--bg) 45%, #070a14 100%);
+      color:var(--txt); font-family:var(--sans);
+    }
+    header{
+      position:sticky; top:0; z-index:5;
+      background: linear-gradient(to bottom, rgba(11,16,32,.92), rgba(11,16,32,.65));
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid var(--line);
+    }
+    .wrap{max-width:1280px; margin:0 auto; padding:18px 18px 22px;}
+    .topbar{
+      display:flex; gap:14px; align-items:center; justify-content:space-between; flex-wrap:wrap;
+    }
+    .title{
+      display:flex; flex-direction:column; gap:2px;
+    }
+    .title h1{margin:0; font-size:18px; letter-spacing:.2px}
+    .title .sub{color:var(--muted); font-size:12px}
+    .controls{
+      display:flex; gap:10px; flex-wrap:wrap; align-items:center; justify-content:flex-end;
+    }
+    .btn, select, input[type="file"]{
+      background: rgba(255,255,255,.06);
+      color: var(--txt);
+      border:1px solid var(--line);
+      border-radius: 12px;
+      padding:10px 12px;
+      font-size:12px;
+      outline:none;
+    }
+    select{padding-right:30px}
+    .btn{
+      cursor:pointer; transition: transform .05s ease, background .15s ease;
+      user-select:none;
+    }
+    .btn:active{transform: translateY(1px)}
+    .btn.primary{background: rgba(122,167,255,.18); border-color: rgba(122,167,255,.35)}
+    .btn.danger{background: rgba(255,92,122,.14); border-color: rgba(255,92,122,.35)}
+    .btn.ghost{background: rgba(255,255,255,.04)}
+    .hint{
+      margin-top:10px;
+      display:flex; gap:10px; flex-wrap:wrap; align-items:center;
+      color:var(--muted); font-size:12px;
+    }
+    .badge{
+      font-family: var(--mono);
+      border:1px solid var(--line);
+      background: rgba(255,255,255,.05);
+      padding:6px 10px;
+      border-radius: 999px;
+    }
+    main .wrap{padding-top:18px}
+    .grid{
+      display:grid;
+      grid-template-columns: repeat(12, 1fr);
+      gap:14px;
+    }
+    .card{
+      border:1px solid var(--line);
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding:14px;
+      overflow:hidden;
+    }
+    .card h2{
+      margin:0 0 10px 0;
+      font-size:13px;
+      letter-spacing:.2px;
+      color: #dbe3ff;
+    }
+    .kpi{
+      display:flex; align-items:baseline; justify-content:space-between; gap:10px;
+      padding:12px; border-radius: 14px;
+      background: rgba(0,0,0,.18);
+      border:1px solid rgba(255,255,255,.06);
+    }
+    .kpi .label{color:var(--muted); font-size:12px}
+    .kpi .value{font-size:18px; font-weight:700; letter-spacing:.2px; font-family:var(--mono)}
+    .kpi .small{font-size:11px; color:var(--muted); font-family:var(--mono)}
+    .row{display:flex; gap:10px; flex-wrap:wrap}
+    .pill{
+      border:1px solid var(--line);
+      background: rgba(255,255,255,.05);
+      border-radius: 999px;
+      padding:6px 10px;
+      font-size:12px;
+      color:var(--muted);
+    }
+    .pill b{color:var(--txt); font-family:var(--mono)}
+    table{
+      width:100%;
+      border-collapse: collapse;
+      font-size:12px;
+    }
+    th, td{
+      padding:10px 10px;
+      border-bottom:1px solid rgba(255,255,255,.06);
+      vertical-align: middle;
+    }
+    th{
+      text-align:left;
+      color:var(--muted);
+      font-weight:600;
+      letter-spacing:.2px;
+      font-size:11px;
+      text-transform: uppercase;
+    }
+    td.num{font-family:var(--mono); text-align:right}
+    .right{ text-align:right }
+    .muted{color:var(--muted)}
+    .band{
+      font-size:11px; padding:4px 8px; border-radius:999px; display:inline-block;
+      border:1px solid var(--line);
+      background: rgba(255,255,255,.05);
+      font-family: var(--mono);
+    }
+    .band.poor{border-color: rgba(255,92,122,.35); background: rgba(255,92,122,.12); color:#ffd0d9}
+    .band.good{border-color: rgba(56,211,159,.35); background: rgba(56,211,159,.10); color:#c8ffe9}
+    .band.wc{border-color: rgba(122,167,255,.35); background: rgba(122,167,255,.12); color:#d7e6ff}
+    .split{
+      display:grid; grid-template-columns: 1fr 1fr; gap:14px;
+    }
+    .footnote{margin-top:10px; font-size:11px; color:var(--muted); line-height:1.4}
+    .status{
+      font-family: var(--mono);
+      font-size:11px;
+      color: var(--muted);
+    }
+    .dangerText{color:#ffb3c2}
+    .goodText{color:#bfffe9}
+    .wcText{color:#d7e6ff}
+    .warnText{color:#ffe5a6}
+    .hr{
+      height:1px; background: rgba(255,255,255,.08);
+      margin:10px 0;
+    }
+    @media (max-width: 1100px){
+      .split{grid-template-columns: 1fr}
+    }
+    @media (max-width: 900px){
+      .grid{grid-template-columns: repeat(6, 1fr)}
+    }
+  </style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <div class="topbar">
+      <div class="title">
+        <h1>Missorts HUB — History Dashboard</h1>
+        <div class="sub">Load from Google Sheet (RAW_DUMP published as CSV) or import a CSV → saved locally → switch Date/Week to view history</div>
+      </div>
+      <div class="controls">
+        <button class="btn primary" id="btnLoadSheet">Load from GSheet</button>
+        <input id="file" type="file" accept=".csv,text/csv" />
+        <button class="btn ghost" id="btnImport">Import & Save</button>
+        <select id="dateSelect" title="Pick a saved date"></select>
+        <select id="weekSelect" title="Pick an ISO week"></select>
+        <button class="btn ghost" id="btnRefresh">Refresh View</button>
+        <button class="btn danger" id="btnWipe">Wipe All Saved Data</button>
+      </div>
+    </div>
+    <div class="hint">
+      <span class="badge" id="dbState">DB: …</span>
+      <span class="badge" id="datesState">Dates: 0</span>
+      <span class="badge" id="rowsState">Rows (selected week): 0</span>
+      <span class="badge" id="thresholdState">Thresholds: WC ≤ 0.005, Good ≤ 0.01</span>
+      <span class="status" id="status">Ready.</span>
+    </div>
+  </div>
+</header>
+
+<main>
+  <div class="wrap">
+    <div class="grid">
+
+      <div class="card" style="grid-column: span 12;">
+        <h2>Week KPIs</h2>
+        <div class="row" id="kpiRow"></div>
+        <div class="hr"></div>
+        <div class="row" id="errorBreakdown"></div>
+        <div class="footnote">
+          Calculations are weighted by parcels: <span class="muted">Missort % = Total Errors / Total Parcels</span>.
+          Banding uses thresholds (default): <span class="wcText">World Class ≤ 0.005</span>, <span class="goodText">Good ≤ 0.01</span>, else <span class="dangerText">Poor</span>.
+        </div>
+      </div>
+
+      <div class="card" style="grid-column: span 6;">
+        <h2>Top 10 WORST performers (by Missort %)</h2>
+        <div id="worstTable"></div>
+      </div>
+
+      <div class="card" style="grid-column: span 6;">
+        <h2>Top 10 BEST performers (by Missort %)</h2>
+        <div id="bestTable"></div>
+      </div>
+
+      <div class="card" style="grid-column: span 12;">
+        <h2>Top 10 by Error Category (counts) — selected week</h2>
+        <div class="split">
+          <div>
+            <div class="pill"><b>Error 1</b> — Top 10 contributors</div>
+            <div id="e1Table" style="margin-top:10px"></div>
+          </div>
+          <div>
+            <div class="pill"><b>Error 2</b> — Top 10 contributors</div>
+            <div id="e2Table" style="margin-top:10px"></div>
+          </div>
+          <div>
+            <div class="pill"><b>Error 3</b> — Top 10 contributors</div>
+            <div id="e3Table" style="margin-top:10px"></div>
+          </div>
+          <div>
+            <div class="pill"><b>Error 4</b> — Top 10 contributors</div>
+            <div id="e4Table" style="margin-top:10px"></div>
+          </div>
+          <div style="grid-column: span 2;">
+            <div class="pill"><b>Error 5</b> — Top 10 contributors</div>
+            <div id="e5Table" style="margin-top:10px"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="grid-column: span 12;">
+        <h2>Repeat Offenders (poor days in selected week)</h2>
+        <div id="repeatTable"></div>
+        <div class="footnote">This counts how many distinct days in the selected week an operative was in the <span class="dangerText">Poor</span> band (based on that day’s missort %).</div>
+      </div>
+
+    </div>
+  </div>
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+<script>
+/** =========================
+ *  Google Sheet (Published CSV) — Option A
+ *  ========================= */
+const PUBLISHED_CSV_URL =
+  "https://docs.google.com/spreadsheets/d/e/2PACX-1vRXmQA94ObKe3l0woMxKUsEVRWqd0u8TdWgfJwcIstgoCGF8TesRXbLO-sEc4X9EhJH7tJo4g4vp_ok/pub?gid=2003695004&single=true&output=csv";
+
+/** =========================
+ *  IndexedDB — missortsHub
+ *  ========================= */
+const DB_NAME = "missortsHub";
+const DB_VER = 1;
+const STORE = "snapshots";  // keyPath: date (YYYY-MM-DD)
+let db = null;
+
+function setStatus(msg){ document.getElementById("status").textContent = msg; }
+function fmtInt(n){ return (Number(n)||0).toLocaleString("en-GB"); }
+function fmtPct(x){
+  if (!isFinite(x)) return "—";
+  return (x*100).toFixed(3) + "%";
+}
+function clampStr(s){ return (s ?? "").toString().trim(); }
+
+function openDB(){
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(DB_NAME, DB_VER);
+    req.onupgradeneeded = (e) => {
+      const d = e.target.result;
+      if (!d.objectStoreNames.contains(STORE)){
+        d.createObjectStore(STORE, { keyPath: "date" });
+      }
+    };
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+function putSnapshot(date, rows){
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction([STORE], "readwrite");
+    tx.objectStore(STORE).put({ date, rows, savedAt: new Date().toISOString() });
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+function getSnapshot(date){
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction([STORE], "readonly");
+    const req = tx.objectStore(STORE).get(date);
+    req.onsuccess = () => resolve(req.result || null);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+function getAllDates(){
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction([STORE], "readonly");
+    const store = tx.objectStore(STORE);
+    const dates = [];
+    const req = store.openCursor();
+    req.onsuccess = (e) => {
+      const cursor = e.target.result;
+      if (cursor){
+        dates.push(cursor.key);
+        cursor.continue();
+      } else {
+        dates.sort();
+        resolve(dates);
+      }
+    };
+    req.onerror = () => reject(req.error);
+  });
+}
+
+function wipeAll(){
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction([STORE], "readwrite");
+    tx.objectStore(STORE).clear();
+    tx.oncomplete = () => resolve();
+    tx.onerror = () => reject(tx.error);
+  });
+}
+
+/** =========================
+ *  ISO week helpers
+ *  ========================= */
+function toISODateStr(d){
+  const z = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+  const yyyy = z.getUTCFullYear();
+  const mm = String(z.getUTCMonth()+1).padStart(2,"0");
+  const dd = String(z.getUTCDate()).padStart(2,"0");
+  return `${yyyy}-${mm}-${dd}`;
+}
+function isoWeek(date){
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const dayNum = d.getUTCDay() || 7;
+  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+  return { year: d.getUTCFullYear(), week: weekNo };
+}
+function weekKeyFromDateStr(dateStr){
+  const d = new Date(dateStr + "T00:00:00Z");
+  const w = isoWeek(d);
+  return `${w.year}-W${String(w.week).padStart(2,"0")}`;
+}
+
+/** =========================
+ *  Data normalisation
+ *  ========================= */
+const REQUIRED = [
+  "Date","Week","operative",
+  "Error 1 - Estimate","Error 2","Error 3","Error 4","Error 5",
+  "Total Parcels"
+];
+
+function normaliseHeader(h){
+  return clampStr(h).replace(/\s+/g," ").trim();
+}
+
+function parseNumber(v){
+  if (v === null || v === undefined) return 0;
+  const s = String(v).replace(/,/g,"").trim();
+  const n = Number(s);
+  return isFinite(n) ? n : 0;
+}
+
+function coerceDateStr(v){
+  const s = clampStr(v);
+  if (!s) return null;
+
+  if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0,10);
+
+  const m = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+  if (m){
+    const a = Number(m[1]), b = Number(m[2]), y = Number(m[3]);
+    let dd, mm;
+    if (a > 12){ dd=a; mm=b; }
+    else if (b > 12){ dd=b; mm=a; }
+    else { dd=a; mm=b; }
+    const d = new Date(Date.UTC(y, mm-1, dd));
+    return toISODateStr(new Date(d));
+  }
+
+  const d = new Date(s);
+  if (isFinite(d.getTime())) return toISODateStr(d);
+
+  return null;
+}
+
+/** =========================
+ *  Thresholds
+ *  ========================= */
+let THRESH = { wcMax: 0.005, goodMax: 0.01 };
+
+function bandFor(p){
+  if (!isFinite(p)) return "Poor";
+  if (p <= THRESH.wcMax) return "World Class";
+  if (p <= THRESH.goodMax) return "Good";
+  return "Poor";
+}
+function bandClass(b){
+  if (b === "World Class") return "wc";
+  if (b === "Good") return "good";
+  return "poor";
+}
+
+/** =========================
+ *  Aggregations
+ *  ========================= */
+function aggregateWeekly(rows){
+  const map = new Map();
+  for (const r of rows){
+    const op = clampStr(r.operative);
+    if (!op) continue;
+
+    const e1 = parseNumber(r["Error 1 - Estimate"]);
+    const e2 = parseNumber(r["Error 2"]);
+    const e3 = parseNumber(r["Error 3"]);
+    const e4 = parseNumber(r["Error 4"]);
+    const e5 = parseNumber(r["Error 5"]);
+    const parcels = parseNumber(r["Total Parcels"]);
+
+    const cur = map.get(op) || { operative: op, e1:0,e2:0,e3:0,e4:0,e5:0, parcels:0 };
+    cur.e1 += e1; cur.e2 += e2; cur.e3 += e3; cur.e4 += e4; cur.e5 += e5; cur.parcels += parcels;
+    map.set(op, cur);
+  }
+
+  const arr = [];
+  for (const v of map.values()){
+    const totalErrors = v.e1+v.e2+v.e3+v.e4+v.e5;
+    const missort = v.parcels > 0 ? totalErrors / v.parcels : NaN;
+    const band = bandFor(missort);
+    arr.push({
+      operative: v.operative,
+      e1: v.e1, e2: v.e2, e3: v.e3, e4: v.e4, e5: v.e5,
+      parcels: v.parcels,
+      totalErrors,
+      missort,
+      band
+    });
+  }
+  return arr;
+}
+
+function totalsFromWeekly(weeklyAgg){
+  let parcels=0, errors=0;
+  let e1=0,e2=0,e3=0,e4=0,e5=0;
+  for (const r of weeklyAgg){
+    parcels += r.parcels;
+    errors += r.totalErrors;
+    e1 += r.e1; e2 += r.e2; e3 += r.e3; e4 += r.e4; e5 += r.e5;
+  }
+  const missort = parcels > 0 ? errors / parcels : NaN;
+  return { parcels, errors, missort, e1,e2,e3,e4,e5 };
+}
+
+function topN(weeklyAgg, keyFn, n=10, desc=true){
+  const a = weeklyAgg.slice().filter(x => isFinite(keyFn(x)));
+  a.sort((x,y) => desc ? (keyFn(y)-keyFn(x)) : (keyFn(x)-keyFn(y)));
+  return a.slice(0,n);
+}
+
+function repeatOffenders(dayRowsInWeek){
+  const dailyByOpDate = new Map();
+  for (const r of dayRowsInWeek){
+    const op = clampStr(r.operative); const date = clampStr(r.Date);
+    if (!op || !date) continue;
+    const k = op + "||" + date;
+    const e = parseNumber(r["Error 1 - Estimate"]) + parseNumber(r["Error 2"]) + parseNumber(r["Error 3"]) + parseNumber(r["Error 4"]) + parseNumber(r["Error 5"]);
+    const p = parseNumber(r["Total Parcels"]);
+    const cur = dailyByOpDate.get(k) || { op, date, errors:0, parcels:0 };
+    cur.errors += e; cur.parcels += p;
+    dailyByOpDate.set(k, cur);
+  }
+
+  const perOp = new Map();
+  for (const rec of dailyByOpDate.values()){
+    const miss = rec.parcels > 0 ? rec.errors / rec.parcels : NaN;
+    const b = bandFor(miss);
+    const cur = perOp.get(rec.op) || [];
+    cur.push({ date: rec.date, missort: miss, band: b });
+    perOp.set(rec.op, cur);
+  }
+
+  const arr = [];
+  for (const [op, days] of perOp.entries()){
+    const daysPresent = days.length;
+    const poorDays = days.filter(d => d.band === "Poor").length;
+    const missorts = days.map(d => d.missort).filter(isFinite);
+    const avgMiss = missorts.length ? missorts.reduce((a,b)=>a+b,0) / missorts.length : NaN;
+    const worst = missorts.length ? Math.max(...missorts) : NaN;
+    if (poorDays >= 1){
+      arr.push({ operative: op, poorDays, daysPresent, avgMissort: avgMiss, worstDay: worst });
+    }
+  }
+
+  arr.sort((a,b) => (b.poorDays - a.poorDays) || (b.worstDay - a.worstDay));
+  return arr;
+}
+
+/** =========================
+ *  Rendering
+ *  ========================= */
+function renderKPIs(t){
+  const row = document.getElementById("kpiRow");
+  row.innerHTML = "";
+
+  const cards = [
+    { label:"Total Parcels (week)", value: fmtInt(t.parcels), small:"Σ parcels" },
+    { label:"Total Errors (week)", value: fmtInt(t.errors), small:"Σ (E1..E5)" },
+    { label:"Missort % (week)", value: fmtPct(t.missort), small:"errors / parcels" }
+  ];
+
+  for (const c of cards){
+    const el = document.createElement("div");
+    el.className = "kpi";
+    el.style.minWidth = "260px";
+    el.innerHTML = `
+      <div>
+        <div class="label">${c.label}</div>
+        <div class="value">${c.value}</div>
+      </div>
+      <div class="small">${c.small}</div>
+    `;
+    row.appendChild(el);
+  }
+}
+
+function renderErrorBreakdown(t){
+  const box = document.getElementById("errorBreakdown");
+  box.innerHTML = "";
+  const items = [
+    ["Error 1s", t.e1],
+    ["Error 2s", t.e2],
+    ["Error 3s", t.e3],
+    ["Error 4s", t.e4],
+    ["Error 5s", t.e5],
+  ];
+  for (const [k,v] of items){
+    const el = document.createElement("div");
+    el.className = "pill";
+    el.innerHTML = `${k}: <b>${fmtInt(v)}</b>`;
+    box.appendChild(el);
+  }
+}
+
+function renderWorstBest(worst, best){
+  document.getElementById("worstTable").innerHTML = renderPerfTable(worst);
+  document.getElementById("bestTable").innerHTML = renderPerfTable(best);
+}
+
+function renderPerfTable(rows){
+  return `
+    <table>
+      <thead>
+        <tr>
+          <th>Operative</th>
+          <th class="right">E1</th>
+          <th class="right">E2</th>
+          <th class="right">E3</th>
+          <th class="right">E4</th>
+          <th class="right">E5</th>
+          <th class="right">Parcels</th>
+          <th class="right">Total Errors</th>
+          <th class="right">Missort %</th>
+          <th>Band</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${rows.map(r => `
+          <tr>
+            <td>${escapeHTML(r.operative)}</td>
+            <td class="num">${fmtInt(r.e1)}</td>
+            <td class="num">${fmtInt(r.e2)}</td>
+            <td class="num">${fmtInt(r.e3)}</td>
+            <td class="num">${fmtInt(r.e4)}</td>
+            <td class="num">${fmtInt(r.e5)}</td>
+            <td class="num">${fmtInt(r.parcels)}</td>
+            <td class="num">${fmtInt(r.totalErrors)}</td>
+            <td class="num">${fmtPct(r.missort)}</td>
+            <td><span class="band ${bandClass(r.band)}">${r.band}</span></td>
+          </tr>
+        `).join("")}
+      </tbody>
+    </table>
+  `;
+}
+
+function renderErrorTopTables(weeklyAgg){
+  const mk = (errKey) => {
+    const top = topN(weeklyAgg, r => r[errKey], 10, true);
+    return `
+      <table>
+        <thead>
+          <tr><th>Operative</th><th class="right">Error Count</th><th class="right">Total Parcels</th><th class="right">Missort %</th></tr>
+        </thead>
+        <tbody>
+          ${top.map(r => `
+            <tr>
+              <td>${escapeHTML(r.operative)}</td>
+              <td class="num">${fmtInt(r[errKey])}</td>
+              <td class="num">${fmtInt(r.parcels)}</td>
+              <td class="num">${fmtPct(r.missort)}</td>
+            </tr>
+          `).join("")}
+        </tbody>
+      </table>
+    `;
+  };
+
+  document.getElementById("e1Table").innerHTML = mk("e1");
+  document.getElementById("e2Table").innerHTML = mk("e2");
+  document.getElementById("e3Table").innerHTML = mk("e3");
+  document.getElementById("e4Table").innerHTML = mk("e4");
+  document.getElementById("e5Table").innerHTML = mk("e5");
+}
+
+function renderRepeatTable(rows){
+  const top = rows.slice(0, 50);
+  document.getElementById("repeatTable").innerHTML = `
+    <table>
+      <thead>
+        <tr>
+          <th>Operative</th>
+          <th class="right">Poor Days</th>
+          <th class="right">Days Present</th>
+          <th class="right">Avg Missort %</th>
+          <th class="right">Worst Day %</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${top.map(r => `
+          <tr>
+            <td>${escapeHTML(r.operative)}</td>
+            <td class="num">${fmtInt(r.poorDays)}</td>
+            <td class="num">${fmtInt(r.daysPresent)}</td>
+            <td class="num">${fmtPct(r.avgMissort)}</td>
+            <td class="num">${fmtPct(r.worstDay)}</td>
+          </tr>
+        `).join("")}
+      </tbody>
+    </table>
+  `;
+}
+
+function escapeHTML(s){
+  return (s ?? "").toString()
+    .replaceAll("&","&amp;")
+    .replaceAll("<","&lt;")
+    .replaceAll(">","&gt;")
+    .replaceAll('"',"&quot;")
+    .replaceAll("'","&#039;");
+}
+
+/** =========================
+ *  Loaders (dates/weeks)
+ *  ========================= */
+async function refreshSelectors(){
+  const dates = await getAllDates();
+  document.getElementById("datesState").textContent = `Dates: ${dates.length}`;
+
+  const dateSel = document.getElementById("dateSelect");
+  const cur = dateSel.value;
+  dateSel.innerHTML = dates.map(d => `<option value="${d}">${d}</option>`).join("");
+  if (dates.length){
+    dateSel.value = cur && dates.includes(cur) ? cur : dates[dates.length - 1];
+  }
+
+  const weekSel = document.getElementById("weekSelect");
+  const weeks = Array.from(new Set(dates.map(weekKeyFromDateStr))).sort();
+  const curW = weekSel.value;
+  weekSel.innerHTML = weeks.map(w => `<option value="${w}">${w}</option>`).join("");
+
+  if (dateSel.value){
+    const wk = weekKeyFromDateStr(dateSel.value);
+    weekSel.value = weeks.includes(wk) ? wk : (curW && weeks.includes(curW) ? curW : (weeks[weeks.length - 1] || ""));
+  }
+}
+
+async function getRowsForWeek(weekKey){
+  const dates = await getAllDates();
+  const inWeekDates = dates.filter(d => weekKeyFromDateStr(d) === weekKey);
+  const all = [];
+  for (const d of inWeekDates){
+    const snap = await getSnapshot(d);
+    if (snap && Array.isArray(snap.rows)) all.push(...snap.rows);
+  }
+  return all;
+}
+
+async function render(){
+  await refreshSelectors();
+  const weekKey = document.getElementById("weekSelect").value;
+  const rows = weekKey ? await getRowsForWeek(weekKey) : [];
+  document.getElementById("rowsState").textContent = `Rows (selected week): ${rows.length}`;
+
+  const weeklyAgg = aggregateWeekly(rows);
+  const totals = totalsFromWeekly(weeklyAgg);
+
+  renderKPIs(totals);
+  renderErrorBreakdown(totals);
+
+  const counts = { poor:0, good:0, wc:0 };
+  for (const r of weeklyAgg){
+    if (r.band === "World Class") counts.wc++;
+    else if (r.band === "Good") counts.good++;
+    else counts.poor++;
+  }
+  const kpiRow = document.getElementById("kpiRow");
+  const cEl = document.createElement("div");
+  cEl.className = "kpi";
+  cEl.style.minWidth = "360px";
+  cEl.innerHTML = `
+    <div>
+      <div class="label">Performer Bands (week)</div>
+      <div class="row" style="margin-top:6px">
+        <span class="pill"><span class="wcText">World Class</span>: <b>${counts.wc}</b></span>
+        <span class="pill"><span class="goodText">Good</span>: <b>${counts.good}</b></span>
+        <span class="pill"><span class="dangerText">Poor</span>: <b>${counts.poor}</b></span>
+      </div>
+    </div>
+    <div class="small">counts of operatives</div>
+  `;
+  kpiRow.appendChild(cEl);
+
+  const filtered = weeklyAgg.filter(r => r.parcels > 0);
+  const worst = topN(filtered, r => r.missort, 10, true);
+  const best  = topN(filtered, r => r.missort, 10, false);
+  renderWorstBest(worst, best);
+
+  renderErrorTopTables(weeklyAgg);
+
+  const repeat = repeatOffenders(rows);
+  renderRepeatTable(repeat);
+}
+
+/** =========================
+ *  Import CSV (local file)
+ *  ========================= */
+function parseCSVFile(file){
+  return new Promise((resolve, reject) => {
+    Papa.parse(file, {
+      header: true,
+      skipEmptyLines: true,
+      dynamicTyping: false,
+      complete: (res) => resolve(res.data || []),
+      error: (err) => reject(err)
+    });
+  });
+}
+
+function validateAndNormaliseRows(rows){
+  const norm = rows.map(r => {
+    const out = {};
+    for (const k in r){
+      out[normaliseHeader(k)] = r[k];
+    }
+    return out;
+  });
+
+  const cols = new Set(Object.keys(norm[0] || {}));
+  const missing = REQUIRED.filter(c => !cols.has(c));
+  if (missing.length){
+    throw new Error("Missing columns: " + missing.join(", "));
+  }
+
+  const cleaned = [];
+  for (const r of norm){
+    const date = coerceDateStr(r.Date);
+    if (!date) continue;
+
+    cleaned.push({
+      Date: date,
+      Week: parseNumber(r.Week),
+      operative: clampStr(r.operative).toLowerCase(),
+      "Error 1 - Estimate": parseNumber(r["Error 1 - Estimate"]),
+      "Error 2": parseNumber(r["Error 2"]),
+      "Error 3": parseNumber(r["Error 3"]),
+      "Error 4": parseNumber(r["Error 4"]),
+      "Error 5": parseNumber(r["Error 5"]),
+      "Total Parcels": parseNumber(r["Total Parcels"])
+    });
+  }
+
+  if (!cleaned.length) throw new Error("No usable rows found after cleaning (check Date format and headers).");
+  return cleaned;
+}
+
+async function importAndSave(){
+  const file = document.getElementById("file").files[0];
+  if (!file){
+    setStatus("Pick a CSV first.");
+    return;
+  }
+
+  setStatus("Parsing CSV…");
+  const rawRows = await parseCSVFile(file);
+  if (!rawRows.length){
+    setStatus("CSV parsed, but it’s empty.");
+    return;
+  }
+
+  let rows;
+  try{
+    rows = validateAndNormaliseRows(rawRows);
+  } catch(e){
+    setStatus("Import failed: " + e.message);
+    return;
+  }
+
+  const byDate = new Map();
+  for (const r of rows){
+    const d = r.Date;
+    const cur = byDate.get(d) || [];
+    cur.push(r);
+    byDate.set(d, cur);
+  }
+
+  setStatus(`Saving ${byDate.size} date(s) to browser storage…`);
+  for (const [date, dayRows] of byDate.entries()){
+    await putSnapshot(date, dayRows);
+  }
+
+  setStatus(`Saved. Imported ${rows.length} rows across ${byDate.size} day(s).`);
+  await refreshSelectors();
+
+  const dates = await getAllDates();
+  if (dates.length){
+    const last = dates[dates.length - 1];
+    document.getElementById("dateSelect").value = last;
+    document.getElementById("weekSelect").value = weekKeyFromDateStr(last);
+  }
+  await render();
+}
+
+/** =========================
+ *  Load from Google Sheet (Published CSV) + Save history
+ *  ========================= */
+async function loadFromGSheetAndSave(){
+  setStatus("Fetching RAW_DUMP from Google Sheet…");
+
+  const res = await fetch(PUBLISHED_CSV_URL, { cache: "no-store" });
+  if (!res.ok) throw new Error(`Fetch failed (${res.status})`);
+
+  const csvText = await res.text();
+  const parsed = Papa.parse(csvText, { header: true, skipEmptyLines: true }).data;
+
+  const cleaned = validateAndNormaliseRows(parsed);
+
+  const byDate = new Map();
+  for (const r of cleaned){
+    const d = r.Date;
+    const cur = byDate.get(d) || [];
+    cur.push(r);
+    byDate.set(d, cur);
+  }
+
+  setStatus(`Saving ${byDate.size} date(s) from GSheet…`);
+  for (const [date, dayRows] of byDate.entries()){
+    await putSnapshot(date, dayRows);
+  }
+
+  // Move selector to latest date available after save
+  const dates = await getAllDates();
+  if (dates.length){
+    const last = dates[dates.length - 1];
+    document.getElementById("dateSelect").value = last;
+    document.getElementById("weekSelect").value = weekKeyFromDateStr(last);
+  }
+
+  setStatus(`Loaded + saved ${cleaned.length} rows across ${byDate.size} date(s).`);
+}
+
+/** =========================
+ *  Init
+ *  ========================= */
+(async function init(){
+  setStatus("Opening local database…");
+  try{
+    db = await openDB();
+    document.getElementById("dbState").textContent = `DB: OK (${DB_NAME})`;
+    setStatus("Ready.");
+  } catch(e){
+    document.getElementById("dbState").textContent = "DB: ERROR";
+    setStatus("IndexedDB failed. Try Chrome/Edge and disable private mode.");
+    return;
+  }
+
+  document.getElementById("thresholdState").textContent =
+    `Thresholds: WC ≤ ${THRESH.wcMax}, Good ≤ ${THRESH.goodMax}`;
+
+  await refreshSelectors();
+  await render();
+
+  // Buttons
+  document.getElementById("btnLoadSheet").addEventListener("click", async () => {
+    try{
+      await loadFromGSheetAndSave();
+      await render();
+      setStatus("Ready.");
+    } catch(e){
+      setStatus("Load failed: " + e.message);
+    }
+  });
+
+  document.getElementById("btnImport").addEventListener("click", importAndSave);
+
+  document.getElementById("btnRefresh").addEventListener("click", async () => {
+    setStatus("Refreshing…");
+    await render();
+    setStatus("Ready.");
+  });
+
+  document.getElementById("dateSelect").addEventListener("change", async (e) => {
+    const d = e.target.value;
+    if (d){
+      document.getElementById("weekSelect").value = weekKeyFromDateStr(d);
+    }
+    setStatus("Date changed → refreshed view.");
+    await render();
+    setStatus("Ready.");
+  });
+
+  document.getElementById("weekSelect").addEventListener("change", async () => {
+    setStatus("Week changed → refreshed view.");
+    await render();
+    setStatus("Ready.");
+  });
+
+  document.getElementById("btnWipe").addEventListener("click", async () => {
+    const ok = confirm("Wipe ALL saved history from this browser? This cannot be undone.");
+    if (!ok) return;
+    await wipeAll();
+    setStatus("All saved data wiped.");
+    await render();
+    setStatus("Ready.");
+  });
+
+  // OPTIONAL AUTO-LOAD ON OPEN (uncomment if you want it)
+  // try{
+  //   await loadFromGSheetAndSave();
+  //   await render();
+  // } catch(e){
+  //   setStatus("Auto-load failed (click Load from GSheet): " + e.message);
+  // }
+})();
+</script>
+</body>
+</html>
