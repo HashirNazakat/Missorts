@@ -95,7 +95,11 @@
     .band.poor{border-color: rgba(255,92,122,.35); background: rgba(255,92,122,.12); color:#ffd0d9}
     .band.good{border-color: rgba(56,211,159,.35); background: rgba(56,211,159,.10); color:#c8ffe9}
     .band.wc{border-color: rgba(122,167,255,.35); background: rgba(122,167,255,.12); color:#d7e6ff}
-    .split{display:grid; grid-template-columns: 1fr 1fr; gap:14px;}
+    .split{
+  display:grid;
+  grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
+  gap:14px;
+}
     .footnote{margin-top:10px; font-size:11px; color:var(--muted); line-height:1.4}
     .status{font-family: var(--mono); font-size:11px; color: var(--muted);}
     .dangerText{color:#ffb3c2}
@@ -122,7 +126,32 @@
       border: 1px solid rgba(255,255,255,.06);
       background: rgba(0,0,0,.10);
     }
-    .tableWrap table{ min-width: 1100px; }
+    .tableWrap{
+  width:100%;
+  overflow-x:auto;
+  -webkit-overflow-scrolling: touch;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,.06);
+  background: rgba(0,0,0,.10);
+}
+
+/* default: tables should fit the card */
+.tableWrap table{
+  width:100%;
+  min-width: 0;
+}
+
+/* only use this for genuinely wide tables */
+.tableWrap.wide table{
+  min-width: 1100px;
+}
+
+/* make scrollbars visible-ish (mac hides by default) */
+.tableWrap::-webkit-scrollbar{ height: 10px; }
+.tableWrap::-webkit-scrollbar-thumb{
+  background: rgba(255,255,255,.18);
+  border-radius: 999px;
+}
     .stickyCol{
       position: sticky;
       left: 0;
