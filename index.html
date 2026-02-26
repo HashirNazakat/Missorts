@@ -84,8 +84,9 @@
       color:var(--muted);
     }
     .pill b{color:var(--txt); font-family:var(--mono)}
+
     table{width:100%; border-collapse: collapse; font-size:12px;}
-    th, td{padding:10px 10px; border-bottom:1px solid rgba(255,255,255,.06); vertical-align: middle;}
+    th, td{padding:10px 10px; border-bottom:1px solid rgba(255,255,255,.06); vertical-align: middle; white-space:nowrap;}
     th{text-align:left; color:var(--muted); font-weight:600; letter-spacing:.2px; font-size:11px; text-transform: uppercase;}
     td.num{font-family:var(--mono); text-align:right}
     .right{ text-align:right }
@@ -111,6 +112,31 @@
       font-size:12px;
       outline:none;
     }
+
+    /* Horizontal scroll tables + sticky first column */
+    .tableWrap{
+      width:100%;
+      overflow-x:auto;
+      -webkit-overflow-scrolling: touch;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,.06);
+      background: rgba(0,0,0,.10);
+    }
+    .tableWrap table{ min-width: 1100px; }
+    .stickyCol{
+      position: sticky;
+      left: 0;
+      background: rgba(10,14,28,.92);
+      backdrop-filter: blur(6px);
+      z-index: 2;
+    }
+    .subline{
+      color:var(--muted);
+      font-size:12px;
+      margin-top:-2px;
+      margin-bottom:10px;
+    }
+
     @media (max-width: 1100px){ .split{grid-template-columns: 1fr} }
     @media (max-width: 900px){ .grid{grid-template-columns: repeat(6, 1fr)} }
   </style>
@@ -121,10 +147,14 @@
     <div class="topbar">
       <div class="title">
         <h1>Missorts HUB — History Dashboard</h1>
-        <div class="sub">Load from Google Sheet (RAW_DUMP published as CSV) → saved locally → switch Date/Week to view history</div>
+        <div class="sub">Load from Google Sheet (RAW_DUMP published as CSV) → saved locally → switch Day/Week to view history</div>
       </div>
       <div class="controls">
         <button class="btn primary" id="btnLoadSheet">Load from GSheet</button>
+        <select id="viewMode" title="View mode">
+          <option value="day">Day view</option>
+          <option value="week">Week view</option>
+        </select>
         <select id="dateSelect" title="Pick a saved date"></select>
         <select id="weekSelect" title="Pick an ISO week"></select>
         <button class="btn ghost" id="btnRefresh">Refresh View</button>
@@ -136,7 +166,7 @@
       <span class="badge" id="dbState">DB: …</span>
       <span class="badge" id="lastUpdated">Last updated: —</span>
       <span class="badge" id="datesState">Dates: 0</span>
-      <span class="badge" id="rowsState">Rows (selected week): 0</span>
+      <span class="badge" id="rowsState">Rows: 0</span>
       <span class="badge" id="thresholdState">Thresholds: WC ≤ 0.005, Good ≤ 0.01</span>
       <span class="status" id="status">Ready.</span>
     </div>
@@ -150,12 +180,14 @@
       <!-- ACTION LIST -->
       <div class="card" style="grid-column: span 12;">
         <h2>Top 5 Actions for Today</h2>
+        <div class="subline">This is always based on the latest saved date in the database (not your selected view).</div>
         <div id="actionsList"></div>
-        <div class="footnote">Owners & due dates are editable and saved locally in this browser. Actions are generated dynamically from today vs baseline + repeat offenders + severity.</div>
+        <div class="footnote">Owners & due dates are editable and saved locally in this browser. Actions update dynamically as your saved data changes.</div>
       </div>
 
       <div class="card" style="grid-column: span 12;">
-        <h2>Week KPIs</h2>
+        <h2 id="kpiTitle">KPIs</h2>
+        <div class="subline" id="kpiSubtitle">—</div>
         <div class="row" id="kpiRow"></div>
         <div class="hr"></div>
         <div class="row" id="errorBreakdown"></div>
@@ -176,7 +208,7 @@
       </div>
 
       <div class="card" style="grid-column: span 12;">
-        <h2>Top 10 by Error Category (counts) — selected week</h2>
+        <h2>Top 10 by Error Category (counts) — current view</h2>
         <div class="split">
           <div>
             <div class="pill"><b>Error 1</b> — Top 10 contributors</div>
@@ -202,9 +234,11 @@
       </div>
 
       <div class="card" style="grid-column: span 12;">
-        <h2>Repeat Offenders (poor days in selected week)</h2>
+        <h2>Repeat Offenders (poor days + repeated error pattern)</h2>
         <div id="repeatTable"></div>
-        <div class="footnote">This counts how many distinct days in the selected week an operative was in the <span class="dangerText">Poor</span> band (based on that day’s missort %).</div>
+        <div class="footnote">
+          This counts how many distinct days in the selected view window an operative was in the <span class="dangerText">Poor</span> band and shows which errors they repeat most on those poor days.
+        </div>
       </div>
 
     </div>
@@ -218,6 +252,100 @@
  *  ========================= */
 const PUBLISHED_CSV_URL =
   "https://docs.google.com/spreadsheets/d/e/2PACX-1vRXmQA94ObKe3l0woMxKUsEVRWqd0u8TdWgfJwcIstgoCGF8TesRXbLO-sEc4X9EhJH7tJo4g4vp_ok/pub?gid=2003695004&single=true&output=csv";
+
+/** =========================
+ *  People directory (Email → Name)
+ *  ========================= */
+const PEOPLE = [
+  {first:"Abdelrazak", last:"suldan", email:"azakn7@gmail.com"},
+  {first:"Abdulnaie", last:"Salim", email:"hhs_abdul@hotmail.co.uk"},
+  {first:"Abukar", last:"Ahmed", email:"abukara432@gmail.com"},
+  {first:"Alaadin", last:"Alhamwi", email:"alaadin@hotmail.co.uk"},
+  {first:"Almas", last:"Zazai", email:"almaszazai9@gmail.com"},
+  {first:"Amila Inoka Herath", last:"Herath", email:"amila.herath@gmail.com"},
+  {first:"Anura Tharanga", last:"Kumara", email:"aatkumara@gmail.com"},
+  {first:"Anuruddhika Kumara", last:"Subharathna", email:"krishanlk@gmail.com"},
+  {first:"Ashen", last:"Silva", email:"ashensilva42@gmail.com"},
+  {first:"Ashraf", last:"Chowdhury", email:"accaashraf@yahoo.com"},
+  {first:"Chamali", last:"Pramudika", email:"pramudihettiachchi@gmail.com"},
+  {first:"Chamika", last:"Senarath", email:"chamika.ruwantha78@gmail.com"},
+  {first:"Chamika", last:"Madushan", email:"chami.kawidanapathirana96@gmail.com"},
+  {first:"Chaminda Kumara", last:"Mallawaarachchi", email:"chamindamallawaarachchi6@gmail.com"},
+  {first:"Chamindu Lakshitha", last:"De Silva", email:"chamindulakshith9@gmail.com"},
+  {first:"Chanaka Sandaruwan", last:"Perera", email:"sandaruwanchanaka471@gmail.com"},
+  {first:"Chandana", last:"Don", email:"priyankara795@yahoo.com"},
+  {first:"Chanupa", last:"Jayawardana", email:"chanupa320@gmail.com"},
+  {first:"Chathura Nuwan", last:"Weerasinghe", email:"chathuranuwan540@gmail.com"},
+  {first:"Darren", last:"Peter", email:"darrenjpeter@gmail.com"},
+  {first:"Deepal", last:"Pushpakumara", email:"arunap20151989@gmail.com"},
+  {first:"Dhananjaya Samarasingh", last:"Hewa Dewage", email:"tdhananjaya772@gmail.com"},
+  {first:"Dilupa", last:"Dias", email:"diasdilupa@gmail.com"},
+  {first:"Dulitha", last:"Pahasara", email:"dulitha.pahasara2006@gmail.com"},
+  {first:"Ebony", last:"Christopher", email:"ebonymarkel1@gmail.com"},
+  {first:"Elvis", last:"Prepah", email:"elvi3studio@gmail.com"},
+  {first:"Eranga Priyanath", last:"Ariyawansha", email:"priyanatheranga@gmail.com"},
+  {first:"Flocy Maline", last:"Almeida", email:"flocyalmeida@gmail.com"},
+  {first:"Florentina", last:"Violeta Corchez", email:"florykok@gmail.com"},
+  {first:"Gayan Kanchana Nilupul", last:"Dissanayake Mudiyanselage", email:"gaikanchana@gmail.com"},
+  {first:"Haroon", last:"Dek", email:"haroondk@gmail.com"},
+  {first:"Hasini", last:"Rathnasiri", email:"hasinirathnasiri@gmail.com"},
+  {first:"Henrieta", last:"Urbancice Fikornova", email:"henula1986@gmail.com"},
+  {first:"Heshan", last:"Rathnayake", email:"heshanpiyumantha9865@gmail.com"},
+  {first:"Hiran Madushan", last:"Dharmarathna", email:"hirandharamarathana@gmail.com"},
+  {first:"Ibrar", last:"Hanif", email:"ibrar482@icloud.com"},
+  {first:"Imasha", last:"Ethugalage", email:"imashadilhara9494@gmail.com"},
+  {first:"Indika", last:"Daswatta", email:"indika@daswatta.co.uk"},
+  {first:"Jipson", last:"Yesudasan", email:"zainjipzon007@gmail.com"},
+  {first:"Kaku", last:"Khanna", email:"mpff@hotmail.co.uk"},
+  {first:"Kasun", last:"Hewage", email:"p.p.h.kasun.k@gmail.com"},
+  {first:"Kasun", last:"Liyanage", email:"liyanage.kasun95@gmail.com"},
+  {first:"Kaveen Anjula", last:"Kanaththage", email:"kaveenanjj10@gmail.com"},
+  {first:"Kavith", last:"Harshana Senaratne", email:"kavith.harshana1@gmail.com"},
+  {first:"KENNETH", last:"KAHAVITA ARACHCHIGE", email:"kenneth_rangana@yahoo.com"},
+  {first:"Lalinda", last:"Jayathilaka", email:"lalinda94@proton.me"},
+  {first:"Mansi", last:"Nehra", email:"mansinehra13g@gmail.com"},
+  {first:"Marin", last:"Mariyanayagam", email:"nlmarin@yahoo.co.uk"},
+  {first:"Mikiel", last:"Bruce", email:"m.donavon@outlook.com"},
+  {first:"Milan", last:"Sinhallage", email:"smdevinda@gmail.com"},
+  {first:"MOHAMMED SHAFEEH KARI VADAKE", last:"THODI", email:"shafeeh07@gmail.com"},
+  {first:"Mudhitha Kanchana", last:"Bandara", email:"mudithapabc@gmail.com"},
+  {first:"Muhammad", last:"Tanveer", email:"hamzatanveer98@gmail.com"},
+  {first:"Nadesh Sameera", last:"Perera", email:"nadesshameera@yahoo.co.uk"},
+  {first:"Najat", last:"Omar", email:"najatmohammed70@gmail.com"},
+  {first:"Naveen", last:"Dileesha", email:"dileesha077@gmail.com"},
+  {first:"Neel", last:"Baldevbhai Patel", email:"neel80265@gmail.com"},
+  {first:"Niranjana Senani", last:"Jansen", email:"niranjanasenani@gmail.com"},
+  {first:"Pawandeep", last:"Kaur", email:"deeppawan295@gmail.com"},
+  {first:"Prasad", last:"Kaluarachchi", email:"prasadkaul01@gmail.com"},
+  {first:"Prasanna Janaka", last:"Don", email:"akith.don@gmail.com"},
+  {first:"Prince Rajendra", last:"Patil", email:"patelprince1098@gmail.com"},
+  {first:"Rasika", last:"Mevantoo De Silva", email:"mewantzoo@gmail.com"},
+  {first:"Rathika Vidarshana", last:"Perera", email:"rathika.vidarshana.rv@gmail.com"},
+  {first:"Raveen Randika", last:"Rathnasinghe", email:"rathnasinghe06@gmail.com"},
+  {first:"Richard", last:"Amayke", email:"richardamakye16@gmail.com"},
+  {first:"Rishitha Melan", last:"Banda", email:"bandaramelan3@gmail.com"},
+  {first:"Sajana Kalinda", last:"Sangasinghe", email:"sksajana97@gmail.com"},
+  {first:"Sameera", last:"Ekanayaka", email:"nuwangetamanna@gmail.com"},
+  {first:"Samidu", last:"Edirisinghe", email:"samiedirisinghe@gmail.com"},
+  {first:"Sampath", last:"Mudiyanselage", email:"sampath71000@gmail.com"},
+  {first:"Sarath", last:"Premachandra", email:"spremachandra53@gmail.com"},
+  {first:"Shanith Chathuranga", last:"Yoda Pedige", email:"shenithchathuranga@gmail.com"},
+  {first:"Tharaka", last:"Herath", email:"tharakasal2006@gmail.com"},
+  {first:"Thisara", last:"Madhushanka", email:"gathisaramadusanka@gmail.com"},
+  {first:"Thushita", last:"Herath Pathiranage", email:"thushithal@live.com"},
+  {first:"Tombari", last:"James", email:"tombarijames@gmail.com"},
+  {first:"Vaischnavan", last:"Vigneswaran", email:"vaischt@icloud.com"},
+  {first:"Vishv", last:"Shah", email:"vishvshah07@gmail.com"},
+  {first:"Wimal Chanaka", last:"Udagara", email:"chanakaurwq@gmail.com"},
+  {first:"Yaasin", last:"Mohamed", email:"yaasmohamed@gmail.com"},
+  {first:"Yahya", last:"Nuur", email:"gorgor4466@gmail.com"},
+];
+
+const PEOPLE_MAP = new Map(
+  PEOPLE
+    .filter(p => p.email)
+    .map(p => [p.email.toLowerCase().trim(), `${(p.first||"").trim()} ${(p.last||"").trim()}`.trim()])
+);
 
 /** =========================
  *  IndexedDB — missortsHub
@@ -376,13 +504,26 @@ function bandClass(b){
 }
 
 /** =========================
+ *  Operative display helpers
+ *  ========================= */
+function resolveDisplay(emailOrId){
+  const key = clampStr(emailOrId).toLowerCase();
+  const nm = PEOPLE_MAP.get(key);
+  if (!nm) return { display: key || "—", email: key || "" };
+  return { display: nm, email: key };
+}
+
+/** =========================
  *  Aggregations
  *  ========================= */
 function aggregateByOperative(rows){
-  const map = new Map();
+  // aggregate by email/id key, but keep a display label for UI
+  const map = new Map(); // key -> agg
   for (const r of rows){
-    const op = clampStr(r.operative);
-    if (!op) continue;
+    const opKey = clampStr(r.operative_key || r.operative).toLowerCase();
+    if (!opKey) continue;
+
+    const opDisp = clampStr(r.operative_display) || resolveDisplay(opKey).display;
 
     const e1 = parseNumber(r["Error 1 - Estimate"]);
     const e2 = parseNumber(r["Error 2"]);
@@ -391,9 +532,12 @@ function aggregateByOperative(rows){
     const e5 = parseNumber(r["Error 5"]);
     const parcels = parseNumber(r["Total Parcels"]);
 
-    const cur = map.get(op) || { operative: op, e1:0,e2:0,e3:0,e4:0,e5:0, parcels:0 };
+    const cur = map.get(opKey) || { operativeKey: opKey, operative: opDisp, e1:0,e2:0,e3:0,e4:0,e5:0, parcels:0 };
+    // if display becomes available later, keep the nicer one
+    if (cur.operative === cur.operativeKey && opDisp !== cur.operativeKey) cur.operative = opDisp;
+
     cur.e1 += e1; cur.e2 += e2; cur.e3 += e3; cur.e4 += e4; cur.e5 += e5; cur.parcels += parcels;
-    map.set(op, cur);
+    map.set(opKey, cur);
   }
 
   const arr = [];
@@ -424,55 +568,127 @@ function topN(agg, keyFn, n=10, desc=true){
   return a.slice(0,n);
 }
 
+/** =========================
+ *  Repeat offenders (with error pattern)
+ *  ========================= */
 function repeatOffenders(dayRows){
-  // Counts poor-band days per op, based on daily aggregation
-  const dailyByOpDate = new Map(); // op||date -> {errors, parcels}
+  // daily aggregate per op/date with error breakdown
+  const daily = new Map(); // opKey||date -> totals
   for (const r of dayRows){
-    const op = clampStr(r.operative); const date = clampStr(r.Date);
-    if (!op || !date) continue;
-    const k = op + "||" + date;
-    const e = parseNumber(r["Error 1 - Estimate"]) + parseNumber(r["Error 2"]) + parseNumber(r["Error 3"]) + parseNumber(r["Error 4"]) + parseNumber(r["Error 5"]);
-    const p = parseNumber(r["Total Parcels"]);
-    const cur = dailyByOpDate.get(k) || { op, date, errors:0, parcels:0 };
-    cur.errors += e; cur.parcels += p;
-    dailyByOpDate.set(k, cur);
+    const opKey = clampStr(r.operative_key || r.operative).toLowerCase();
+    const date = clampStr(r.Date);
+    if (!opKey || !date) continue;
+
+    const e1 = parseNumber(r["Error 1 - Estimate"]);
+    const e2 = parseNumber(r["Error 2"]);
+    const e3 = parseNumber(r["Error 3"]);
+    const e4 = parseNumber(r["Error 4"]);
+    const e5 = parseNumber(r["Error 5"]);
+    const p  = parseNumber(r["Total Parcels"]);
+
+    const k = opKey + "||" + date;
+    const cur = daily.get(k) || { opKey, date, e1:0,e2:0,e3:0,e4:0,e5:0, parcels:0 };
+    cur.e1 += e1; cur.e2 += e2; cur.e3 += e3; cur.e4 += e4; cur.e5 += e5; cur.parcels += p;
+    daily.set(k, cur);
   }
 
   const perOp = new Map();
-  for (const rec of dailyByOpDate.values()){
-    const miss = rec.parcels > 0 ? rec.errors / rec.parcels : NaN;
-    const b = bandFor(miss);
-    const cur = perOp.get(rec.op) || [];
-    cur.push({ date: rec.date, missort: miss, band: b, parcels: rec.parcels });
-    perOp.set(rec.op, cur);
+  for (const rec of daily.values()){
+    const totalErrors = rec.e1+rec.e2+rec.e3+rec.e4+rec.e5;
+    const miss = rec.parcels > 0 ? totalErrors / rec.parcels : NaN;
+    const band = bandFor(miss);
+
+    const { display } = resolveDisplay(rec.opKey);
+
+    const cur = perOp.get(rec.opKey) || {
+      operativeKey: rec.opKey,
+      operative: display,
+      poorDays: 0,
+      daysPresent: 0,
+      avgMissAccum: 0,
+      avgMissN: 0,
+      worstDay: -Infinity,
+      pe1:0,pe2:0,pe3:0,pe4:0,pe5:0
+    };
+
+    cur.daysPresent += 1;
+    if (isFinite(miss)){
+      cur.avgMissAccum += miss;
+      cur.avgMissN += 1;
+      cur.worstDay = Math.max(cur.worstDay, miss);
+    }
+
+    if (band === "Poor"){
+      cur.poorDays += 1;
+      cur.pe1 += rec.e1; cur.pe2 += rec.e2; cur.pe3 += rec.e3; cur.pe4 += rec.e4; cur.pe5 += rec.e5;
+    }
+
+    perOp.set(rec.opKey, cur);
   }
 
-  const arr = [];
-  for (const [op, days] of perOp.entries()){
-    const daysPresent = days.length;
-    const poorDays = days.filter(d => d.band === "Poor").length;
-    const missorts = days.map(d => d.missort).filter(isFinite);
-    const avgMiss = missorts.length ? missorts.reduce((a,b)=>a+b,0) / missorts.length : NaN;
-    const worst = missorts.length ? Math.max(...missorts) : NaN;
-    if (poorDays >= 1){
-      arr.push({ operative: op, poorDays, daysPresent, avgMissort: avgMiss, worstDay: worst });
-    }
+  const out = [];
+  for (const x of perOp.values()){
+    if (x.poorDays < 1) continue;
+
+    const avgMiss = x.avgMissN ? x.avgMissAccum / x.avgMissN : NaN;
+
+    const errPairs = [
+      ["E1", x.pe1],
+      ["E2", x.pe2],
+      ["E3", x.pe3],
+      ["E4", x.pe4],
+      ["E5", x.pe5],
+    ].sort((a,b)=>b[1]-a[1]);
+
+    const dominant = errPairs[0][1] > 0 ? errPairs[0][0] : "—";
+    const pattern = errPairs
+      .filter(p=>p[1]>0)
+      .slice(0,2)
+      .map(p=>`${p[0]}:${fmtInt(p[1])}`)
+      .join("  ");
+
+    out.push({
+      operativeKey: x.operativeKey,
+      operative: x.operative,
+      poorDays: x.poorDays,
+      daysPresent: x.daysPresent,
+      avgMissort: avgMiss,
+      worstDay: x.worstDay,
+      dominantError: dominant,
+      errorPattern: pattern || "—",
+      pe1:x.pe1, pe2:x.pe2, pe3:x.pe3, pe4:x.pe4, pe5:x.pe5
+    });
   }
-  arr.sort((a,b) => (b.poorDays - a.poorDays) || (b.worstDay - a.worstDay));
-  return arr;
+
+  out.sort((a,b) => (b.poorDays - a.poorDays) || (b.worstDay - a.worstDay));
+  return out;
 }
 
 /** =========================
  *  Rendering core dashboard
  *  ========================= */
-function renderKPIs(t){
+function renderKPIs(t, viewMode, selectedDate, selectedWeek){
+  const title = document.getElementById("kpiTitle");
+  const sub = document.getElementById("kpiSubtitle");
+
+  if (viewMode === "day"){
+    title.textContent = "Day KPIs";
+    sub.textContent = selectedDate ? `Date: ${selectedDate}` : "Date: —";
+  } else {
+    title.textContent = "Week KPIs";
+    sub.textContent = selectedWeek ? `Week: ${selectedWeek}` : "Week: —";
+  }
+
   const row = document.getElementById("kpiRow");
   row.innerHTML = "";
+
+  const labelSuffix = viewMode === "day" ? "(day)" : "(week)";
   const cards = [
-    { label:"Total Parcels (week)", value: fmtInt(t.parcels), small:"Σ parcels" },
-    { label:"Total Errors (week)", value: fmtInt(t.errors), small:"Σ (E1..E5)" },
-    { label:"Missort % (week)", value: fmtPct(t.missort), small:"errors / parcels" }
+    { label:`Total Parcels ${labelSuffix}`, value: fmtInt(t.parcels), small:"Σ parcels" },
+    { label:`Total Errors ${labelSuffix}`, value: fmtInt(t.errors), small:"Σ (E1..E5)" },
+    { label:`Missort % ${labelSuffix}`, value: fmtPct(t.missort), small:"errors / parcels" }
   ];
+
   for (const c of cards){
     const el = document.createElement("div");
     el.className = "kpi";
@@ -513,31 +729,33 @@ function renderWorstBest(worst, best){
 
 function renderPerfTable(rows){
   return `
-    <table>
-      <thead>
-        <tr>
-          <th>Operative</th>
-          <th class="right">E1</th><th class="right">E2</th><th class="right">E3</th><th class="right">E4</th><th class="right">E5</th>
-          <th class="right">Parcels</th><th class="right">Total Errors</th><th class="right">Missort %</th><th>Band</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${rows.map(r => `
+    <div class="tableWrap">
+      <table>
+        <thead>
           <tr>
-            <td>${escapeHTML(r.operative)}</td>
-            <td class="num">${fmtInt(r.e1)}</td>
-            <td class="num">${fmtInt(r.e2)}</td>
-            <td class="num">${fmtInt(r.e3)}</td>
-            <td class="num">${fmtInt(r.e4)}</td>
-            <td class="num">${fmtInt(r.e5)}</td>
-            <td class="num">${fmtInt(r.parcels)}</td>
-            <td class="num">${fmtInt(r.totalErrors)}</td>
-            <td class="num">${fmtPct(r.missort)}</td>
-            <td><span class="band ${bandClass(r.band)}">${r.band}</span></td>
+            <th class="stickyCol">Operative</th>
+            <th class="right">E1</th><th class="right">E2</th><th class="right">E3</th><th class="right">E4</th><th class="right">E5</th>
+            <th class="right">Parcels</th><th class="right">Total Errors</th><th class="right">Missort %</th><th>Band</th>
           </tr>
-        `).join("")}
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          ${rows.map(r => `
+            <tr>
+              <td class="stickyCol">${escapeHTML(r.operative)}</td>
+              <td class="num">${fmtInt(r.e1)}</td>
+              <td class="num">${fmtInt(r.e2)}</td>
+              <td class="num">${fmtInt(r.e3)}</td>
+              <td class="num">${fmtInt(r.e4)}</td>
+              <td class="num">${fmtInt(r.e5)}</td>
+              <td class="num">${fmtInt(r.parcels)}</td>
+              <td class="num">${fmtInt(r.totalErrors)}</td>
+              <td class="num">${fmtPct(r.missort)}</td>
+              <td><span class="band ${bandClass(r.band)}">${r.band}</span></td>
+            </tr>
+          `).join("")}
+        </tbody>
+      </table>
+    </div>
   `;
 }
 
@@ -545,21 +763,23 @@ function renderErrorTopTables(agg){
   const mk = (errKey) => {
     const top = topN(agg, r => r[errKey], 10, true);
     return `
-      <table>
-        <thead>
-          <tr><th>Operative</th><th class="right">Error Count</th><th class="right">Total Parcels</th><th class="right">Missort %</th></tr>
-        </thead>
-        <tbody>
-          ${top.map(r => `
-            <tr>
-              <td>${escapeHTML(r.operative)}</td>
-              <td class="num">${fmtInt(r[errKey])}</td>
-              <td class="num">${fmtInt(r.parcels)}</td>
-              <td class="num">${fmtPct(r.missort)}</td>
-            </tr>
-          `).join("")}
-        </tbody>
-      </table>
+      <div class="tableWrap">
+        <table>
+          <thead>
+            <tr><th class="stickyCol">Operative</th><th class="right">Error Count</th><th class="right">Total Parcels</th><th class="right">Missort %</th></tr>
+          </thead>
+          <tbody>
+            ${top.map(r => `
+              <tr>
+                <td class="stickyCol">${escapeHTML(r.operative)}</td>
+                <td class="num">${fmtInt(r[errKey])}</td>
+                <td class="num">${fmtInt(r.parcels)}</td>
+                <td class="num">${fmtPct(r.missort)}</td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>
+      </div>
     `;
   };
   document.getElementById("e1Table").innerHTML = mk("e1");
@@ -572,28 +792,44 @@ function renderErrorTopTables(agg){
 function renderRepeatTable(rows){
   const top = rows.slice(0, 50);
   document.getElementById("repeatTable").innerHTML = `
-    <table>
-      <thead>
-        <tr>
-          <th>Operative</th>
-          <th class="right">Poor Days</th>
-          <th class="right">Days Present</th>
-          <th class="right">Avg Missort %</th>
-          <th class="right">Worst Day %</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${top.map(r => `
+    <div class="tableWrap">
+      <table>
+        <thead>
           <tr>
-            <td>${escapeHTML(r.operative)}</td>
-            <td class="num">${fmtInt(r.poorDays)}</td>
-            <td class="num">${fmtInt(r.daysPresent)}</td>
-            <td class="num">${fmtPct(r.avgMissort)}</td>
-            <td class="num">${fmtPct(r.worstDay)}</td>
+            <th class="stickyCol">Operative</th>
+            <th class="right">Poor Days</th>
+            <th class="right">Days Present</th>
+            <th class="right">Avg Missort %</th>
+            <th class="right">Worst Day %</th>
+            <th>Dominant Error</th>
+            <th>Error Pattern (poor days)</th>
+            <th class="right">E1</th>
+            <th class="right">E2</th>
+            <th class="right">E3</th>
+            <th class="right">E4</th>
+            <th class="right">E5</th>
           </tr>
-        `).join("")}
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          ${top.map(r => `
+            <tr>
+              <td class="stickyCol">${escapeHTML(r.operative)}</td>
+              <td class="num">${fmtInt(r.poorDays)}</td>
+              <td class="num">${fmtInt(r.daysPresent)}</td>
+              <td class="num">${fmtPct(r.avgMissort)}</td>
+              <td class="num">${fmtPct(r.worstDay)}</td>
+              <td>${escapeHTML(r.dominantError)}</td>
+              <td class="muted">${escapeHTML(r.errorPattern)}</td>
+              <td class="num">${fmtInt(r.pe1)}</td>
+              <td class="num">${fmtInt(r.pe2)}</td>
+              <td class="num">${fmtInt(r.pe3)}</td>
+              <td class="num">${fmtInt(r.pe4)}</td>
+              <td class="num">${fmtInt(r.pe5)}</td>
+            </tr>
+          `).join("")}
+        </tbody>
+      </table>
+    </div>
   `;
 }
 
@@ -666,32 +902,32 @@ async function rollingBaseline(todayStr, daysBack=7){
   const rows = [];
   for (const d of windowDates) rows.push(...await getRowsForDate(d));
 
-  let parcels=0, e1=0,e2=0,e3=0,e4=0,e5=0;
+  let parcels=0, e1=0,e2=0,e3=0,e4=0,e5=0, errors=0;
   for (const r of rows){
-    parcels += parseNumber(r["Total Parcels"]);
-    e1 += parseNumber(r["Error 1 - Estimate"]);
-    e2 += parseNumber(r["Error 2"]);
-    e3 += parseNumber(r["Error 3"]);
-    e4 += parseNumber(r["Error 4"]);
-    e5 += parseNumber(r["Error 5"]);
+    const p = parseNumber(r["Total Parcels"]);
+    const E1 = parseNumber(r["Error 1 - Estimate"]);
+    const E2 = parseNumber(r["Error 2"]);
+    const E3 = parseNumber(r["Error 3"]);
+    const E4 = parseNumber(r["Error 4"]);
+    const E5 = parseNumber(r["Error 5"]);
+    parcels += p;
+    e1 += E1; e2 += E2; e3 += E3; e4 += E4; e5 += E5;
+    errors += (E1+E2+E3+E4+E5);
   }
-  return { parcels, e1,e2,e3,e4,e5, nDays: windowDates.length };
+  return { parcels, errors, e1,e2,e3,e4,e5, nDays: windowDates.length };
 }
 
 /** =========================
- *  "AI-like" Action Engine
- *  Concrete actions, dynamic, no routes
+ *  "AI-like" Action Engine (no routes)
  *  ========================= */
 const ACTION_CFG = {
   minParcelsForCoaching: 250,
-  spikeMultiplier: 1.5,         // today rate > 1.5x baseline => spike
-  spikeAbsPerK: 0.75,           // also require absolute spike, to avoid noise
-  repeatPoorDays: 3,            // retrain trigger
-  severePoorDays: 5,            // escalation trigger
-  maxActions: 8                 // we will rank and show top 5, but generate more
+  spikeMultiplier: 1.5,
+  spikeAbsPerK: 0.75,
+  repeatPoorDays: 3,
+  severePoorDays: 5
 };
 
-// Default owners (editable + saved)
 const OWNER_DEFAULTS = {
   retrain: "Supervisor",
   coaching: "Supervisor",
@@ -725,32 +961,28 @@ function renderActions(actions){
       <tr>
         <td>${escapeHTML(a.action)}</td>
         <td class="num">${escapeHTML(String(a.priority))}</td>
-        <td>
-          <input class="inline" data-k="${escapeHTML(k)}" data-f="owner"
-                 value="${escapeHTML(owner)}" placeholder="Owner">
-        </td>
-        <td>
-          <input class="inline" data-k="${escapeHTML(k)}" data-f="due" type="date"
-                 value="${escapeHTML(due)}">
-        </td>
+        <td><input class="inline" data-k="${escapeHTML(k)}" data-f="owner" value="${escapeHTML(owner)}" placeholder="Owner"></td>
+        <td><input class="inline" data-k="${escapeHTML(k)}" data-f="due" type="date" value="${escapeHTML(due)}"></td>
         <td class="muted">${escapeHTML(a.reason || "")}</td>
       </tr>
     `;
   }).join("");
 
   document.getElementById("actionsList").innerHTML = `
-    <table>
-      <thead>
-        <tr>
-          <th>Action</th>
-          <th class="right">Priority</th>
-          <th>Owner</th>
-          <th>Due</th>
-          <th>Why</th>
-        </tr>
-      </thead>
-      <tbody>${rows || `<tr><td colspan="5" class="muted">No actions generated.</td></tr>`}</tbody>
-    </table>
+    <div class="tableWrap">
+      <table>
+        <thead>
+          <tr>
+            <th class="stickyCol">Action</th>
+            <th class="right">Priority</th>
+            <th>Owner</th>
+            <th>Due</th>
+            <th>Why</th>
+          </tr>
+        </thead>
+        <tbody>${rows || `<tr><td colspan="5" class="muted">No actions generated.</td></tr>`}</tbody>
+      </table>
+    </div>
   `;
 
   document.querySelectorAll("#actionsList input").forEach(inp => {
@@ -768,7 +1000,6 @@ function renderActions(actions){
 }
 
 function scoreAction(a){
-  // lower is higher priority; tie-break with "severity"
   const base = a.priority * 100;
   const sev = Number(a.severity || 0);
   return base - sev;
@@ -784,11 +1015,9 @@ async function generateActionsForToday(){
   const todayTotals = totalsFromAgg(todayAgg);
 
   const base = await rollingBaseline(today, 7);
-
   const actions = [];
 
-  // A) DATA QUALITY action (if basics look wrong)
-  // e.g. errors > parcels, zero parcels, missing operatives
+  // Data sanity
   const suspicious = todayAgg.find(r => r.totalErrors > r.parcels && r.parcels > 0);
   if (todayTotals.parcels === 0 || todayRows.length === 0){
     actions.push({
@@ -796,10 +1025,10 @@ async function generateActionsForToday(){
       subject:"No data",
       priority:1,
       severity:100,
-      action:`Fix data feed — today has no usable rows/parcels`,
+      action:`Fix data feed — latest saved date has no usable rows/parcels`,
       owner: OWNER_DEFAULTS.data_quality,
       due: addDaysISO(0),
-      reason:`No rows or total parcels = 0 for latest date (${today}). Check RAW_DUMP export/publish.`
+      reason:`No rows or total parcels = 0 for latest date (${today}). Check RAW_DUMP publish/export.`
     });
     return actions.slice(0,5);
   }
@@ -816,73 +1045,70 @@ async function generateActionsForToday(){
     });
   }
 
-  // Build 7-day window rows (today included) for repeat offenders
+  // Repeat offenders over last 7 available dates (incl today)
   const idx = dates.indexOf(today);
-  const windowDates = dates.slice(Math.max(0, idx - 6), idx + 1); // last 7 calendar-available dates
+  const windowDates = dates.slice(Math.max(0, idx - 6), idx + 1);
   const windowRows = [];
   for (const d of windowDates) windowRows.push(...await getRowsForDate(d));
   const repeat = repeatOffenders(windowRows);
 
-  // B) RETRAIN repeat offenders (>=3 poor days)
-  const repeatCandidates = repeat.filter(x => x.poorDays >= ACTION_CFG.repeatPoorDays).slice(0,3);
-  for (const r of repeatCandidates){
+  // Retrain trigger
+  repeat.filter(x => x.poorDays >= ACTION_CFG.repeatPoorDays).slice(0,3).forEach(r => {
     actions.push({
       type:"retrain",
-      subject:r.operative,
+      subject:r.operativeKey,
       priority:1,
       severity: Math.min(100, r.poorDays * 15),
       action:`Retrain / re-brief ${r.operative} — repeat poor performance`,
       owner: OWNER_DEFAULTS.retrain,
       due: addDaysISO(2),
-      reason:`${r.poorDays} poor days in last ${windowDates.length} days (avg ${fmtPct(r.avgMissort)}, worst ${fmtPct(r.worstDay)}).`
+      reason:`${r.poorDays} poor days in last ${windowDates.length} days. Pattern: ${r.errorPattern} (dominant ${r.dominantError}).`
     });
-  }
+  });
 
-  // C) ESCALATE severe repeat offenders (>=5 poor days)
-  const severe = repeat.filter(x => x.poorDays >= ACTION_CFG.severePoorDays).slice(0,2);
-  for (const r of severe){
+  // Escalation trigger
+  repeat.filter(x => x.poorDays >= ACTION_CFG.severePoorDays).slice(0,2).forEach(r => {
     actions.push({
       type:"escalation",
-      subject:r.operative,
+      subject:r.operativeKey,
       priority:1,
       severity: 95,
-      action:`Escalate performance plan for ${r.operative} (PIP / removal from critical tasks)`,
+      action:`Escalate performance plan for ${r.operative} (PIP / remove from critical tasks)`,
       owner: OWNER_DEFAULTS.escalation,
       due: addDaysISO(1),
-      reason:`Severe: ${r.poorDays} poor days in last ${windowDates.length} days.`
+      reason:`Severe: ${r.poorDays} poor days in last ${windowDates.length}. Pattern: ${r.errorPattern}.`
     });
-  }
+  });
 
-  // D) TODAY worst performers coaching (only if volume is meaningful)
-  const worstToday = topN(todayAgg.filter(x=>x.parcels>0), r => r.missort, 5, true);
-  for (const w of worstToday.slice(0,2)){
+  // Today worst coaching (volume-aware)
+  const worstToday = topN(todayAgg.filter(x=>x.parcels>0), r => r.missort, 5, true).slice(0,2);
+  for (const w of worstToday){
     if (w.parcels < ACTION_CFG.minParcelsForCoaching){
       actions.push({
         type:"coaching",
-        subject:w.operative,
+        subject:w.operativeKey,
         priority:3,
         severity: 20,
-        action:`Validate before coaching — ${w.operative} has low volume today (${w.parcels} parcels)`,
+        action:`Validate before coaching — ${w.operative} is high % on low volume today (${fmtInt(w.parcels)} parcels)`,
         owner: OWNER_DEFAULTS.coaching,
         due: "",
-        reason:`High % on low parcels is noisy. Re-check with supervisor observation + next shift volume.`
+        reason:`Low parcels makes missort% noisy. Observe process + re-check next shift.`
       });
     } else {
       actions.push({
         type:"coaching",
-        subject:w.operative,
+        subject:w.operativeKey,
         priority:2,
         severity: Math.min(80, w.missort*10000),
-        action:`Targeted coaching for ${w.operative} on today’s misses`,
+        action:`Targeted coaching for ${w.operative} — focus on dominant errors today`,
         owner: OWNER_DEFAULTS.coaching,
         due: addDaysISO(1),
-        reason:`Today missort ${fmtPct(w.missort)} on ${fmtInt(w.parcels)} parcels (errors ${fmtInt(w.totalErrors)}).`
+        reason:`Today missort ${fmtPct(w.missort)} on ${fmtInt(w.parcels)} parcels (errors ${fmtInt(w.totalErrors)}). Biggest counts: E2 ${fmtInt(w.e2)}, E1 ${fmtInt(w.e1)}, E4 ${fmtInt(w.e4)}.`
       });
     }
   }
 
-  // E) PROCESS CHECK actions based on error-category spikes vs baseline
-  // Uses rate per 1,000 parcels for comparability.
+  // Error spikes vs baseline (per 1k parcels)
   if (base && base.parcels > 0){
     const todayRates = {
       e1: ratePerK(todayTotals.parcels, todayTotals.e1),
@@ -890,6 +1116,7 @@ async function generateActionsForToday(){
       e3: ratePerK(todayTotals.parcels, todayTotals.e3),
       e4: ratePerK(todayTotals.parcels, todayTotals.e4),
       e5: ratePerK(todayTotals.parcels, todayTotals.e5),
+      miss: ratePerK(todayTotals.parcels, todayTotals.errors),
     };
     const baseRates = {
       e1: ratePerK(base.parcels, base.e1),
@@ -897,6 +1124,7 @@ async function generateActionsForToday(){
       e3: ratePerK(base.parcels, base.e3),
       e4: ratePerK(base.parcels, base.e4),
       e5: ratePerK(base.parcels, base.e5),
+      miss: ratePerK(base.parcels, base.errors),
     };
 
     function maybeSpike(key, label){
@@ -906,14 +1134,13 @@ async function generateActionsForToday(){
       const abs = t - b;
       if (mult >= ACTION_CFG.spikeMultiplier && abs >= ACTION_CFG.spikeAbsPerK){
         const uplift = (mult - 1) * 100;
-        // identify top contributors to this error today
         const topContrib = topN(todayAgg, r => r[key], 3, true).filter(x=>x[key]>0).map(x=>x.operative);
         actions.push({
           type:"process_check",
           subject:label,
           priority:1,
           severity: Math.min(90, uplift),
-          action:`Investigate ${label} spike today — check process controls + brief floor`,
+          action:`Investigate ${label} spike — check process controls + brief floor`,
           owner: OWNER_DEFAULTS.process_check,
           due: addDaysISO(1),
           reason:`${label}/1k today ${t.toFixed(2)} vs baseline ${b.toFixed(2)} (+${uplift.toFixed(0)}%). Top contributors: ${topContrib.join(", ") || "n/a"}.`
@@ -927,11 +1154,9 @@ async function generateActionsForToday(){
     maybeSpike("e4", "Error 4");
     maybeSpike("e5", "Error 5");
 
-    // Overall missort spike (management-level action)
-    const todayMissK = ratePerK(todayTotals.parcels, todayTotals.errors);
-    const baseMissK = ratePerK(base.parcels, (base.e1+base.e2+base.e3+base.e4+base.e5));
-    if (baseMissK > 0 && (todayMissK/baseMissK) >= 1.35 && (todayMissK-baseMissK) >= 0.75){
-      const uplift = ((todayMissK/baseMissK)-1)*100;
+    // Overall spike huddle
+    if (baseRates.miss > 0 && (todayRates.miss/baseRates.miss) >= 1.35 && (todayRates.miss-baseRates.miss) >= 0.75){
+      const uplift = ((todayRates.miss/baseRates.miss)-1)*100;
       actions.push({
         type:"daily_huddle",
         subject:"Overall missorts",
@@ -940,31 +1165,30 @@ async function generateActionsForToday(){
         action:`Run 10-min quality huddle — missorts are up vs baseline`,
         owner: OWNER_DEFAULTS.daily_huddle,
         due: addDaysISO(0),
-        reason:`Missorts/1k today ${todayMissK.toFixed(2)} vs baseline ${baseMissK.toFixed(2)} (+${uplift.toFixed(0)}%). Focus on top error category spikes.`
+        reason:`Missorts/1k today ${todayRates.miss.toFixed(2)} vs baseline ${baseRates.miss.toFixed(2)} (+${uplift.toFixed(0)}%).`
       });
     }
   }
 
-  // F) QA / audit action if a single operative is driving majority of one error type today
-  // Simple “dominance” check
+  // Concentration audit (example on E4)
   const totalE4 = todayTotals.e4;
   if (totalE4 > 0){
     const topE4 = topN(todayAgg, r => r.e4, 1, true)[0];
     if (topE4 && topE4.e4 / totalE4 >= 0.35 && topE4.e4 >= 5){
       actions.push({
         type:"qa_audit",
-        subject:`Error 4 dominance`,
+        subject:`E4||${topE4.operativeKey}`,
         priority:2,
         severity: 70,
         action:`QA spot-audit ${topE4.operative} handling — concentrated Error 4`,
         owner: OWNER_DEFAULTS.qa_audit,
         due: addDaysISO(1),
-        reason:`${topE4.operative} accounts for ${(topE4.e4/totalE4*100).toFixed(0)}% of today’s Error 4 (${topE4.e4}/${totalE4}).`
+        reason:`${topE4.operative} accounts for ${(topE4.e4/totalE4*100).toFixed(0)}% of today’s Error 4 (${fmtInt(topE4.e4)}/${fmtInt(totalE4)}).`
       });
     }
   }
 
-  // De-dupe by type+subject
+  // De-dupe + rank
   const seen = new Set();
   const deduped = [];
   for (const a of actions){
@@ -973,14 +1197,12 @@ async function generateActionsForToday(){
     seen.add(k);
     deduped.push(a);
   }
-
-  // Rank and return top 5
   deduped.sort((a,b)=> scoreAction(a) - scoreAction(b));
   return deduped.slice(0,5);
 }
 
 /** =========================
- *  Validation & normalisation (shared)
+ *  Validation & normalisation
  *  ========================= */
 function validateAndNormaliseRows(rows){
   const norm = rows.map(r => {
@@ -998,10 +1220,15 @@ function validateAndNormaliseRows(rows){
     const date = coerceDateStr(r.Date);
     if (!date) continue;
 
+    const rawOp = clampStr(r.operative).toLowerCase();
+    const { display } = resolveDisplay(rawOp);
+
     cleaned.push({
       Date: date,
       Week: parseNumber(r.Week),
-      operative: clampStr(r.operative).toLowerCase(),
+      operative_key: rawOp,          // stable key (email/id)
+      operative_display: display,    // nice label
+      operative: rawOp,              // keep original too
       "Error 1 - Estimate": parseNumber(r["Error 1 - Estimate"]),
       "Error 2": parseNumber(r["Error 2"]),
       "Error 3": parseNumber(r["Error 3"]),
@@ -1054,21 +1281,29 @@ async function loadFromGSheetAndSave(){
 }
 
 /** =========================
- *  Main render
+ *  Main render (Day view vs Week view)
  *  ========================= */
 async function render(){
   await refreshSelectors();
-  const weekKey = document.getElementById("weekSelect").value;
-  const rows = weekKey ? await getRowsForWeek(weekKey) : [];
-  document.getElementById("rowsState").textContent = `Rows (selected week): ${rows.length}`;
+
+  const viewMode = document.getElementById("viewMode").value;
+  const selectedDate = document.getElementById("dateSelect").value;
+  const selectedWeek = document.getElementById("weekSelect").value;
+
+  const rows = (viewMode === "day")
+    ? (selectedDate ? await getRowsForDate(selectedDate) : [])
+    : (selectedWeek ? await getRowsForWeek(selectedWeek) : []);
+
+  document.getElementById("rowsState").textContent =
+    `Rows (${viewMode === "day" ? "selected day" : "selected week"}): ${rows.length}`;
 
   const agg = aggregateByOperative(rows);
   const totals = totalsFromAgg(agg);
 
-  renderKPIs(totals);
+  renderKPIs(totals, viewMode, selectedDate, selectedWeek);
   renderErrorBreakdown(totals);
 
-  // band counts (week)
+  // band counts
   const counts = { poor:0, good:0, wc:0 };
   for (const r of agg){
     if (r.band === "World Class") counts.wc++;
@@ -1081,7 +1316,7 @@ async function render(){
   cEl.style.minWidth = "360px";
   cEl.innerHTML = `
     <div>
-      <div class="label">Performer Bands (week)</div>
+      <div class="label">Performer Bands (${viewMode === "day" ? "day" : "week"})</div>
       <div class="row" style="margin-top:6px">
         <span class="pill"><span class="wcText">World Class</span>: <b>${counts.wc}</b></span>
         <span class="pill"><span class="goodText">Good</span>: <b>${counts.good}</b></span>
@@ -1099,10 +1334,18 @@ async function render(){
 
   renderErrorTopTables(agg);
 
-  const repeat = repeatOffenders(rows);
+  // Repeat offenders window should match the current view:
+  // - day view: show repeat offenders for the ISO week of that selected date (so it still makes sense)
+  // - week view: show repeat offenders for that selected week
+  let repeatRows = rows;
+  if (viewMode === "day" && selectedDate){
+    const wk = weekKeyFromDateStr(selectedDate);
+    repeatRows = await getRowsForWeek(wk);
+  }
+  const repeat = repeatOffenders(repeatRows);
   renderRepeatTable(repeat);
 
-  // ACTIONS (today, dynamic)
+  // Actions (always based on latest date)
   const actions = await generateActionsForToday();
   renderActions(actions);
 }
@@ -1133,6 +1376,8 @@ async function render(){
   document.getElementById("btnLoadSheet").addEventListener("click", async () => {
     try{
       await loadFromGSheetAndSave();
+      // after load, default to DAY view of latest date
+      document.getElementById("viewMode").value = "day";
       await render();
       setStatus("Ready.");
     } catch(e){
@@ -1147,16 +1392,24 @@ async function render(){
     setStatus("Ready.");
   });
 
+  document.getElementById("viewMode").addEventListener("change", async () => {
+    setStatus("View mode changed → refreshed view.");
+    await render();
+    setStatus("Ready.");
+  });
+
   document.getElementById("dateSelect").addEventListener("change", async (e) => {
     const d = e.target.value;
     if (d) document.getElementById("weekSelect").value = weekKeyFromDateStr(d);
-    setStatus("Date changed → refreshed view.");
+    document.getElementById("viewMode").value = "day";
+    setStatus("Date changed → Day view.");
     await render();
     setStatus("Ready.");
   });
 
   document.getElementById("weekSelect").addEventListener("change", async () => {
-    setStatus("Week changed → refreshed view.");
+    document.getElementById("viewMode").value = "week";
+    setStatus("Week changed → Week view.");
     await render();
     setStatus("Ready.");
   });
@@ -1172,10 +1425,6 @@ async function render(){
     await render();
     setStatus("Ready.");
   });
-
-  // AUTO-LOAD on open (optional). Uncomment if you want:
-  // try{ await loadFromGSheetAndSave(); await render(); }
-  // catch(e){ console.error(e); setStatus("Auto-load failed (click Load from GSheet): " + (e?.message || e)); }
 })();
 </script>
 </body>
